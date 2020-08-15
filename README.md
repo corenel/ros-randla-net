@@ -111,3 +111,8 @@ On GPU (RTX 2070 8GB):
 | post-process            | 79.7921   |
 | **Total**               | 204.2314  |
 
+## TODO
+
+- [ ] Accelerate `tf_map` step in pre-process procedure
+- [ ] Add code for training models
+- [ ] Support `element` class
