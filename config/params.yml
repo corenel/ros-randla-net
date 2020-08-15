@@ -1,4 +1,8 @@
 ros_randla_net:
+  general:
+    debug: false
+  network:
+    checkpoint_path: asset/checkpoints/model6.pth
   topics:
-    pcl_sub: /pointcloud/orig
-    pcl_pub: /pointcloud/seg
+    pcl_sub: /source_cloud
+    pcl_pub: /source_cloud_segmented

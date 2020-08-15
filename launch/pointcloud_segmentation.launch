@@ -6,6 +6,6 @@
         respawn="false"
         cwd="node"
         args="">
-    <rosparam command="load" file="$(find ros_randla_net)/config/params.yml"/>
   </node>
+  <rosparam command="load" file="$(find ros_randla_net)/config/params.yml"/>
 </launch>

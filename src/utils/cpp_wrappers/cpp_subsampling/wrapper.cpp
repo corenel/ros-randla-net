@@ -1,6 +1,6 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
-#include "grid_subsampling/grid_subsampling.h"
+#include "src/grid_subsampling.h"
 #include <string>
 
 
@@ -22,7 +22,7 @@ static PyObject *grid_subsampling_compute(PyObject *self, PyObject *args, PyObje
 // Specify the members of the module
 // *********************************
 
-static PyMethodDef module_methods[] = 
+static PyMethodDef grid_subsampling_methods[] =
 {
 	{ "compute", (PyCFunction)grid_subsampling_compute, METH_VARARGS | METH_KEYWORDS, compute_docstring },
     {NULL, NULL, 0, NULL}
@@ -32,24 +32,12 @@ static PyMethodDef module_methods[] =
 // Initialize the module
 // *********************
 
-static struct PyModuleDef moduledef = 
-{
-    PyModuleDef_HEAD_INIT,
-    "grid_subsampling",     // m_name
-    module_docstring,       // m_doc
-    -1,                     // m_size
-    module_methods,         // m_methods
-    NULL,                   // m_reload
-    NULL,                   // m_traverse
-    NULL,                   // m_clear
-    NULL,                   // m_free
-};
-
-PyMODINIT_FUNC PyInit_grid_subsampling(void)
+PyMODINIT_FUNC initgrid_subsampling(void)
 {
     import_array();
-	return PyModule_Create(&moduledef);
+  	(void) Py_InitModule("grid_subsampling", grid_subsampling_methods);
 }
+
 
 
 // Actual wrapper

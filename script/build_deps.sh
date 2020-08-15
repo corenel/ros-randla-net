@@ -12,8 +12,7 @@ cd src/utils/nearest_neighbors \
 # build and install cpp_wrappers
 cd "$(git rev-parse --show-cdup)"|| exit
 cd src/utils/cpp_wrappers/cpp_subsampling \
-  && python3 setup.py build_ext --inplace \
+  && python setup.py build_ext --inplace \
   && touch ../__init__.py \
   && touch __init__.py \
-  && touch grid_subsampling/__init__.py \
   || exit

@@ -44,9 +44,9 @@ class Network(nn.Module):
 
     def forward(self, end_points):
 
-        features = end_points['features']  # Batch*channel*npoints
-        features = self.fc0(features)
-
+        features = end_points['xyz'][0]
+        features = features.permute(0,2,1)
+        features = self.fc0(features)   # Batch*channel=8*npoints
         features = features.unsqueeze(dim=3)  # Batch*channel*npoints*1
 
         # ###########################Encoder############################
@@ -79,8 +79,7 @@ class Network(nn.Module):
         features = self.fc3(features)
         f_out = features.squeeze(3)
 
-        end_points['logits'] = f_out
-        return end_points
+        return f_out
 
     @staticmethod
     def random_sample(feature, pool_idx):
