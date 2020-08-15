@@ -1,0 +1,11 @@
+<launch>
+  <node pkg="ros_randla_net"
+        name="ros_randla_net"
+        type="ros_main.py"
+        output="screen"
+        respawn="false"
+        cwd="node"
+        args="">
+    <rosparam command="load" file="$(find ros_randla_net)/config/params.yml"/>
+  </node>
+</launch>

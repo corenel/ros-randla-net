@@ -1,0 +1,4 @@
+ros_randla_net:
+  topics:
+    pcl_sub: /pointcloud/orig
+    pcl_pub: /pointcloud/seg
