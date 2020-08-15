@@ -1,36 +1,6 @@
 import torch.nn as nn
 
 
-
-# class SharedMLP(nn.Sequential):
-#
-#     def __init__(
-#             self,
-#             args: List[int],
-#             bn = False,
-#             activation=nn.ReLU(inplace=True),
-#             preact = False,
-#             first = False,
-#             name = "",
-#             instance_norm = False
-#     ):
-#         super().__init__()
-#
-#         for i in range(len(args) - 1):
-#             self.add_module(
-#                 name + 'layer{}'.format(i),
-#                 Conv2d(
-#                     args[i],
-#                     args[i + 1],
-#                     bn=(not first or not preact or (i != 0)) and bn,
-#                     activation=activation
-#                     if (not first or not preact or (i != 0)) else None,
-#                     preact=preact,
-#                     instance_norm=instance_norm
-#                 )
-#             )
-
-
 class _ConvBase(nn.Sequential):
 
     def __init__(
@@ -51,7 +21,7 @@ class _ConvBase(nn.Sequential):
             instance_norm=False,
             instance_norm_func=None
     ):
-        super(_ConvBase).__init__()
+        super(_ConvBase, self).__init__()
 
         bias = bias and (not bn)
         conv_unit = conv(
@@ -103,7 +73,7 @@ class _ConvBase(nn.Sequential):
 class _BNBase(nn.Sequential):
 
     def __init__(self, in_size, batch_norm=None, name=""):
-        super(_BNBase).__init__()
+        super(_BNBase, self).__init__()
         self.add_module(name + "bn", batch_norm(in_size, eps=1e-6, momentum=0.99))
 
         nn.init.constant_(self[0].weight, 1.0)
@@ -113,13 +83,13 @@ class _BNBase(nn.Sequential):
 class BatchNorm1d(_BNBase):
 
     def __init__(self, in_size, name=""):
-        super(BatchNorm1d).__init__(in_size, batch_norm=nn.BatchNorm1d, name=name)
+        super(BatchNorm1d, self).__init__(in_size, batch_norm=nn.BatchNorm1d, name=name)
 
 
 class BatchNorm2d(_BNBase):
 
     def __init__(self, in_size, name=""):
-        super(BatchNorm2d).__init__(in_size, batch_norm=nn.BatchNorm2d, name=name)
+        super(BatchNorm2d, self).__init__(in_size, batch_norm=nn.BatchNorm2d, name=name)
 
 
 class Conv1d(_ConvBase):
@@ -140,7 +110,7 @@ class Conv1d(_ConvBase):
             name="",
             instance_norm=False
     ):
-        super(Conv1d).__init__(
+        super(Conv1d, self).__init__(
             in_size,
             out_size,
             kernel_size,
@@ -176,7 +146,7 @@ class Conv2d(_ConvBase):
             name="",
             instance_norm=False
     ):
-        super(Conv2d).__init__(
+        super(Conv2d, self).__init__(
             in_size,
             out_size,
             kernel_size,
@@ -207,7 +177,7 @@ class FC(nn.Sequential):
             preact=False,
             name=""
     ):
-        super(FC).__init__()
+        super(FC, self).__init__()
 
         fc = nn.Linear(in_size, out_size, bias=not bn)
         if init is not None:

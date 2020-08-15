@@ -7,10 +7,11 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
+
 class Network(nn.Module):
 
     def __init__(self, config):
-        super(Network).__init__()
+        super(Network, self).__init__()
         self.config = config
         self.class_weights = DP.get_class_weights('SemanticKITTI')
 
@@ -166,7 +167,7 @@ class IoUCalculator:
 
 class Dilated_res_block(nn.Module):
     def __init__(self, d_in, d_out):
-        super().__init__()
+        super(Dilated_res_block, self).__init__()
 
         self.mlp1 = pt_utils.Conv2d(d_in, d_out//2, kernel_size=(1,1), bn=True)
         self.lfa = Building_block(d_out)
@@ -183,7 +184,7 @@ class Dilated_res_block(nn.Module):
 
 class Building_block(nn.Module):
     def __init__(self, d_out):  #  d_in = d_out//2
-        super().__init__()
+        super(Building_block, self).__init__()
         self.mlp1 = pt_utils.Conv2d(10, d_out//2, kernel_size=(1,1), bn=True)
         self.att_pooling_1 = Att_pooling(d_out, d_out//2)
 
@@ -229,7 +230,7 @@ class Building_block(nn.Module):
 
 class Att_pooling(nn.Module):
     def __init__(self, d_in, d_out):
-        super().__init__()
+        super(Att_pooling, self).__init__()
         self.fc = nn.Conv2d(d_in, d_in, (1, 1), bias=False)
         self.mlp = pt_utils.Conv2d(d_in, d_out, kernel_size=(1,1), bn=True)
 
