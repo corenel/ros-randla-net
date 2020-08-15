@@ -19,7 +19,7 @@ from utils.timer import Timer
 class InferenceHelper:
     # TODO move hardcoded definitions into config file
     label_to_names = {0: 'unlabeled',
-                      1: 'triangle',
+                      1: 'tripod',
                       2: 'element'}
     label_to_colors = {0: (255, 255, 255),
                        1: (255, 0, 0),
