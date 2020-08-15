@@ -1,6 +1,7 @@
-numpy
+numpy>=1.16
 torch
 torchvision
 future
 pandas
 sklearn
+python-pcl

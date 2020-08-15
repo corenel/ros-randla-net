@@ -33,16 +33,16 @@ ROS node for RandLA-Net to achieve point cloud segmentation.
 
       ```bash
       # on computer with Internet access
-      $ mkdir ~/Downloads/wheels
+      $ mkdir -p ~/Downloads/wheels
       $ python -m pip install -U pip --user
       $ python -m pip download pip -d ~/Downloads/wheels
       $ python -m pip download -r requirements.txt -d ~/Downloads/wheels
-      $ python -m pip download rospkg catkin-pkg catkin-tools empy -d ~/Downloads/wheels
+      $ python -m pip download Cython rospkg catkin-pkg catkin-tools empy -d ~/Downloads/wheels
       # copy wheels to computer without Internet access
       # and run the following commands to install packages offline
       $ python -m pip install -U pip --no-index --find-links=/path/to/wheels --user
-      $ python -m pip install Cython --no-index --find-links=/path/to/wheels --user
-      $ python -m pip install -r requirements.txt --no-index --find-links=/path/to/wheels --user
+      $ python -m pip install -U Cython --no-index --find-links=/path/to/wheels --user
+      $ python -m pip install -U -r requirements.txt --no-index --find-links=/path/to/wheels --user
       $ python -m pip install -U rospkg catkin-pkg catkin-tools empy --no-index --find-links=/path/to/wheels --user
       ```
 
