@@ -49,6 +49,7 @@ class InferenceHelper:
         self.net.eval()
 
         self.debug = rospy.get_param('/ros_randla_net/general/debug')
+        self.frame_id = rospy.get_param('/ros_randla_net/general/frame_id')
         self.timer = Timer(enabled=self.debug)
 
     def pre_process(self, ros_msg):
@@ -101,13 +102,13 @@ class InferenceHelper:
             preds = self.net(batch_data)
         return preds
 
-    def post_process(self, pcl_xyz, preds):
+    def post_process(self, ros_msg, pcl_xyz, preds):
         logits = preds
         logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
         logits = logits.max(dim=1)[1].cpu().numpy()
         colors = [self.label_to_colors[int(label)] for label in logits]
         pcl_xyzrgb = ros_helper.XYZ_to_XYZRGB(pcl_xyz, color=colors, use_multiple_colors=True)
-        out_msg = ros_helper.pcl_to_ros(pcl_xyzrgb)
+        out_msg = ros_helper.pcl_to_ros(pcl_xyzrgb, frmae_id=self.frame_id, timestamp=ros_msg.header.stamp)
         return out_msg
 
     def process(self, ros_msg):
@@ -115,7 +116,7 @@ class InferenceHelper:
         inputs, pcl_xyz = self.pre_process(ros_msg)
         preds = self.inference(inputs)
         self.timer.log_and_restart('inference')
-        out_msg = self.post_process(pcl_xyz, preds)
+        out_msg = self.post_process(ros_msg, pcl_xyz, preds)
         self.timer.log_and_restart('post-process')
         self.timer.print_log()
         return out_msg

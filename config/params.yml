@@ -1,6 +1,7 @@
 ros_randla_net:
   general:
     debug: false
+    frame_id: livox_frame
   network:
     checkpoint_path: asset/checkpoints/model6.pth
   topics:

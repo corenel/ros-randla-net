@@ -48,10 +48,14 @@ def ros_to_pcl(ros_cloud, field_type='xyzrgb'):
     return pcl_data
 
 
-def pcl_to_ros(pcl_array):
+def pcl_to_ros(pcl_array, frmae_id='world', timestamp=None):
     """
     Converts a ROS PointCloud2 message to a pcl PointXYZRGB
 
+    :param timestamp: message timestamp
+    :type timestamp: rospy.Time
+    :param frmae_id: frame id
+    :type frmae_id: str
     :param pcl_array: A PCL XYZRGB point cloud
     :type pcl_array: PointCloud_PointXYZRGB
     :return: A ROS point cloud
@@ -59,8 +63,8 @@ def pcl_to_ros(pcl_array):
     """
     ros_msg = PointCloud2()
 
-    ros_msg.header.stamp = rospy.Time.now()
-    ros_msg.header.frame_id = "livox_frame"
+    ros_msg.header.stamp = rospy.Time.now() if timestamp is None else timestamp
+    ros_msg.header.frame_id = frmae_id
 
     ros_msg.height = 1
     ros_msg.width = pcl_array.size
@@ -150,6 +154,18 @@ def XYZ_to_XYZRGB(XYZ_cloud, color, use_multiple_colors=False):
 
     XYZRGB_cloud.from_list(points_list)
     return XYZRGB_cloud
+
+
+def XYZ_to_XYZI(XYZ_cloud, color, use_multiple_colors=False):
+    XYZI_cloud = pcl.PointCloud_PointXYZI()
+    points_list = []
+
+    for idx, data in enumerate(XYZ_cloud):
+        intensity = int(color[idx]) if use_multiple_colors else int(color)
+        points_list.append([data[0], data[1], data[2], intensity])
+
+    XYZI_cloud.from_list(points_list)
+    return XYZI_cloud
 
 
 def rgb_to_float(color):
