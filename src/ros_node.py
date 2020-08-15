@@ -27,14 +27,19 @@ class InferenceHelper:
 
     def __init__(self, checkpoint_path=None):
         # init network
-        self.device = torch.device(
-            "cuda:0" if torch.cuda.is_available() else "cpu")
+
+        device = rospy.get_param('/ros_randla_net/network/device')
+        if device == 'auto':
+            self.device = torch.device(
+                "cuda:0" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = torch.device(device)
         self.net = Network(cfg)
         self.net.to(self.device)
 
         # load checkpoint
         if checkpoint_path is not None and os.path.isfile(checkpoint_path):
-            checkpoint = torch.load(checkpoint_path)
+            checkpoint = torch.load(checkpoint_path, map_location=self.device)
             start_epoch = checkpoint['epoch']
             self.net.load_state_dict(checkpoint['state_dict'])
             rospy.loginfo("-> loaded checkpoint %s (epoch: %d)" %
@@ -43,7 +48,7 @@ class InferenceHelper:
         # use multiple gpus if possible
         if torch.cuda.device_count() > 1:
             rospy.loginfo("Let's use %d GPUs!" % (torch.cuda.device_count()))
-            net = nn.DataParallel(self.net)
+            self.net = nn.DataParallel(self.net)
 
         # set model into evaluation mode
         self.net.eval()
@@ -54,7 +59,7 @@ class InferenceHelper:
 
     def pre_process(self, ros_msg):
         self.timer.restart()
-        # convert from ROS PointCloud2 to PCL XYZRGB
+        # convert from ROS PointCloud2 to PCL XYZ
         pcl_xyz = ros_helper.ros_to_pcl(ros_msg, field_type='xyz')
         self.timer.log_and_restart('pre-process: ros_to_pcl')
 
@@ -93,12 +98,13 @@ class InferenceHelper:
 
     def inference(self, batch_data):
         with torch.no_grad():
-            for key in batch_data:
-                if type(batch_data[key]) is list:
-                    for i in range(len(batch_data[key])):
-                        batch_data[key][i] = batch_data[key][i].cuda()
-                else:
-                    batch_data[key] = batch_data[key].cuda()
+            if self.device.type != 'cpu':
+                for key in batch_data:
+                    if type(batch_data[key]) is list:
+                        for i in range(len(batch_data[key])):
+                            batch_data[key][i] = batch_data[key][i].cuda()
+                    else:
+                        batch_data[key] = batch_data[key].cuda()
             preds = self.net(batch_data)
         return preds
 

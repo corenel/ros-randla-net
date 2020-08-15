@@ -69,12 +69,12 @@ class Timer(object):
         rospy.loginfo('')
         rospy.loginfo('Profiling')
         rospy.loginfo('-' * 30)
-        rospy.loginfo('{:<20} {:<10}'.format('Item', 'Time (ms)'))
+        rospy.loginfo('|{:<20}|{:<10}|'.format('Item', 'Time (ms)'))
         rospy.loginfo('-' * 30)
         total = 0.
         for k, v in self.log.items():
-            rospy.loginfo('{:<20} {:<10.4f}'.format(k, v * 1000 / self.counter[k]))
+            rospy.loginfo('|{:<20}|{:<10.4f}|'.format(k, v * 1000 / self.counter[k]))
             total += v * 1000 / self.counter[k]
         rospy.loginfo('-' * 30)
-        rospy.loginfo('{:<20} {:<10.4f}'.format('total', total))
+        rospy.loginfo('|{:<20}|{:<10.4f}|'.format('total', total))
         rospy.loginfo('-' * 30)

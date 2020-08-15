@@ -3,6 +3,9 @@ ros_randla_net:
     debug: false
     frame_id: livox_frame
   network:
+    #    device: cpu
+    #    device: "cuda:0"
+    device: "auto"
     checkpoint_path: asset/checkpoints/model6.pth
   topics:
     pcl_sub: /source_cloud
