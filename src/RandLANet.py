@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix
 class Network(nn.Module):
 
     def __init__(self, config):
-        super().__init__()
+        super(Network).__init__()
         self.config = config
         self.class_weights = DP.get_class_weights('SemanticKITTI')
 

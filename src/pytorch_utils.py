@@ -1,35 +1,34 @@
 import torch.nn as nn
-from typing import List, Tuple
 
 
-class SharedMLP(nn.Sequential):
 
-    def __init__(
-            self,
-            args: List[int],
-            *,
-            bn: bool = False,
-            activation=nn.ReLU(inplace=True),
-            preact: bool = False,
-            first: bool = False,
-            name: str = "",
-            instance_norm: bool = False
-    ):
-        super().__init__()
-
-        for i in range(len(args) - 1):
-            self.add_module(
-                name + 'layer{}'.format(i),
-                Conv2d(
-                    args[i],
-                    args[i + 1],
-                    bn=(not first or not preact or (i != 0)) and bn,
-                    activation=activation
-                    if (not first or not preact or (i != 0)) else None,
-                    preact=preact,
-                    instance_norm=instance_norm
-                )
-            )
+# class SharedMLP(nn.Sequential):
+#
+#     def __init__(
+#             self,
+#             args: List[int],
+#             bn = False,
+#             activation=nn.ReLU(inplace=True),
+#             preact = False,
+#             first = False,
+#             name = "",
+#             instance_norm = False
+#     ):
+#         super().__init__()
+#
+#         for i in range(len(args) - 1):
+#             self.add_module(
+#                 name + 'layer{}'.format(i),
+#                 Conv2d(
+#                     args[i],
+#                     args[i + 1],
+#                     bn=(not first or not preact or (i != 0)) and bn,
+#                     activation=activation
+#                     if (not first or not preact or (i != 0)) else None,
+#                     preact=preact,
+#                     instance_norm=instance_norm
+#                 )
+#             )
 
 
 class _ConvBase(nn.Sequential):
@@ -52,7 +51,7 @@ class _ConvBase(nn.Sequential):
             instance_norm=False,
             instance_norm_func=None
     ):
-        super().__init__()
+        super(_ConvBase).__init__()
 
         bias = bias and (not bn)
         conv_unit = conv(
@@ -104,7 +103,7 @@ class _ConvBase(nn.Sequential):
 class _BNBase(nn.Sequential):
 
     def __init__(self, in_size, batch_norm=None, name=""):
-        super().__init__()
+        super(_BNBase).__init__()
         self.add_module(name + "bn", batch_norm(in_size, eps=1e-6, momentum=0.99))
 
         nn.init.constant_(self[0].weight, 1.0)
@@ -113,35 +112,35 @@ class _BNBase(nn.Sequential):
 
 class BatchNorm1d(_BNBase):
 
-    def __init__(self, in_size: int, *, name: str = ""):
-        super().__init__(in_size, batch_norm=nn.BatchNorm1d, name=name)
+    def __init__(self, in_size, name=""):
+        super(BatchNorm1d).__init__(in_size, batch_norm=nn.BatchNorm1d, name=name)
 
 
 class BatchNorm2d(_BNBase):
 
-    def __init__(self, in_size: int, name: str = ""):
-        super().__init__(in_size, batch_norm=nn.BatchNorm2d, name=name)
+    def __init__(self, in_size, name=""):
+        super(BatchNorm2d).__init__(in_size, batch_norm=nn.BatchNorm2d, name=name)
 
 
 class Conv1d(_ConvBase):
 
     def __init__(
             self,
-            in_size: int,
-            out_size: int,
-            *,
-            kernel_size: int = 1,
-            stride: int = 1,
-            padding: int = 0,
+            in_size,
+            out_size,
+
+            kernel_size=1,
+            stride=1,
+            padding=0,
             activation=nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            bn: bool = False,
+            bn=False,
             init=nn.init.kaiming_normal_,
-            bias: bool = True,
-            preact: bool = False,
-            name: str = "",
+            bias=True,
+            preact=False,
+            name="",
             instance_norm=False
     ):
-        super().__init__(
+        super(Conv1d).__init__(
             in_size,
             out_size,
             kernel_size,
@@ -164,21 +163,20 @@ class Conv2d(_ConvBase):
 
     def __init__(
             self,
-            in_size: int,
-            out_size: int,
-            *,
-            kernel_size: Tuple[int, int] = (1, 1),
-            stride: Tuple[int, int] = (1, 1),
-            padding: Tuple[int, int] = (0, 0),
+            in_size,
+            out_size,
+            kernel_size=(1, 1),
+            stride=(1, 1),
+            padding=(0, 0),
             activation=nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            bn: bool = False,
+            bn=False,
             init=nn.init.kaiming_normal_,
-            bias: bool = True,
-            preact: bool = False,
-            name: str = "",
+            bias=True,
+            preact=False,
+            name="",
             instance_norm=False
     ):
-        super().__init__(
+        super(Conv2d).__init__(
             in_size,
             out_size,
             kernel_size,
@@ -201,16 +199,15 @@ class FC(nn.Sequential):
 
     def __init__(
             self,
-            in_size: int,
-            out_size: int,
-            *,
+            in_size,
+            out_size,
             activation=nn.ReLU(inplace=True),
-            bn: bool = False,
+            bn=False,
             init=None,
-            preact: bool = False,
-            name: str = ""
+            preact=False,
+            name=""
     ):
-        super().__init__()
+        super(FC).__init__()
 
         fc = nn.Linear(in_size, out_size, bias=not bn)
         if init is not None:
@@ -236,7 +233,6 @@ class FC(nn.Sequential):
 
 
 def set_bn_momentum_default(bn_momentum):
-
     def fn(m):
         if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
             m.momentum = bn_momentum

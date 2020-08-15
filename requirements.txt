@@ -1,1 +1,6 @@
 numpy
+torch
+torchvision
+future
+pandas
+sklearn

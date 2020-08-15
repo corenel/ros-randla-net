@@ -128,5 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# projet-related
+# project-related
 .idea
+!src/utils/nearest_neighbors/lib/__init__.py
+!src/utils/nearest_neighbors/lib/python/__init__.py
+.egg_info
