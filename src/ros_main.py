@@ -12,7 +12,7 @@ from ros_node import InferenceNode
 
 
 def main(args):
-    rospy.init_node('ros_randla_net', anonymous=True)
+    rospy.init_node('~', anonymous=True)
     node = InferenceNode()
     try:
         rospy.spin()

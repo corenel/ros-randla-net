@@ -3,7 +3,7 @@
 # build and install nearest_neighbors
 cd "$(git rev-parse --show-cdup)"|| exit
 cd src/utils/nearest_neighbors \
-  && python setup.py install -e --home="." \
+  && python setup.py install --home="." \
   || exit
 
 # build and install cpp_wrappers
