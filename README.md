@@ -96,6 +96,7 @@ ROS node for RandLA-Net to achieve point cloud segmentation.
 | ------------------ | ---------- |
 | GPU (RTX 2070 8GB) | 4.8Hz      |
 | CPU (i5-9400)      | 1.2Hz      |
+| CPU (i5-8250U)     | 0.4Hz      |
 
 ### Profiling
 

@@ -64,13 +64,13 @@ class Network(nn.Module):
         features = self.decoder_0(f_encoder_list[-1])
 
         # ###########################Decoder############################
-        f_decoder_list = []
+        # f_decoder_list = []
         for j in range(self.config.num_layers):
             f_interp_i = self.nearest_interpolation(features, end_points['interp_idx'][-j - 1])
             f_decoder_i = self.decoder_blocks[j](torch.cat([f_encoder_list[-j - 2], f_interp_i], dim=1))
 
             features = f_decoder_i
-            f_decoder_list.append(f_decoder_i)
+            # f_decoder_list.append(f_decoder_i)
         # ###########################Decoder############################
 
         features = self.fc1(features)
@@ -244,7 +244,6 @@ class Att_pooling(nn.Module):
 
 
 def compute_loss(end_points, cfg):
-
     logits = end_points['logits']
     labels = end_points['labels']
 

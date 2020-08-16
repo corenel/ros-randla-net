@@ -27,13 +27,17 @@ class InferenceHelper:
 
     def __init__(self, checkpoint_path=None):
         # init network
-
         device = rospy.get_param('/ros_randla_net/network/device')
         if device == 'auto':
             self.device = torch.device(
                 "cuda:0" if torch.cuda.is_available() else "cpu")
         else:
             self.device = torch.device(device)
+        rospy.loginfo('Use device: {}'.format(self.device.type))
+        if self.device.type == 'cpu':
+            os.environ['LRU_CACHE_CAPACITY'] = '1'
+            rospy.loginfo('Set LRU_CACHE_CAPACITY={} to avoid memory leak'.format(os.getenv('LRU_CACHE_CAPACITY')))
+
         self.net = Network(cfg)
         self.net.to(self.device)
 
@@ -46,7 +50,7 @@ class InferenceHelper:
                           (checkpoint_path, start_epoch))
 
         # use multiple gpus if possible
-        if torch.cuda.device_count() > 1:
+        if self.device.type != 'cpu' and torch.cuda.device_count() > 1:
             rospy.loginfo("Let's use %d GPUs!" % (torch.cuda.device_count()))
             self.net = nn.DataParallel(self.net)
 
@@ -64,8 +68,7 @@ class InferenceHelper:
         self.timer.log_and_restart('pre-process: ros_to_pcl')
 
         # convert to numpy array
-        np_xyz = np.asarray(pcl_xyz)
-        batch_pc = np.stack([np_xyz])
+        batch_pc = np.expand_dims(np.asarray(pcl_xyz), axis=0)
         self.timer.log_and_restart('pre-process: pcl_to_np')
 
         # tf amp

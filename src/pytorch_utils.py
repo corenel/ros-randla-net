@@ -98,7 +98,6 @@ class Conv1d(_ConvBase):
             self,
             in_size,
             out_size,
-
             kernel_size=1,
             stride=1,
             padding=0,
