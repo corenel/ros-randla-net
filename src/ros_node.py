@@ -10,9 +10,9 @@ from sensor_msgs.msg import PointCloud2
 from torch import nn
 
 import ros_helper
-from RandLANet import Network
-from helper_tool import ConfigQDH as cfg
-from helper_tool import DataProcessing as DP
+from models.RandLANet import Network
+from utils.helper_tool import ConfigQDH as cfg
+from utils.helper_tool import DataProcessing as DP
 from utils.timer import Timer
 
 

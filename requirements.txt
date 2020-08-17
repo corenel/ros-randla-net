@@ -5,3 +5,6 @@ future
 pandas
 sklearn
 python-pcl
+tensorboardX
+tqdm
+open3d
