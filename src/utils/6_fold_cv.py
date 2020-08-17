@@ -23,22 +23,28 @@ if __name__ == '__main__':
     for file_name in data_path:
         pred_data = read_ply(file_name)
         pred = pred_data['pred']
-        original_data = read_ply(os.path.join(original_data_dir, file_name.split('/')[-1][:-4] + '.ply'))
+        original_data = read_ply(
+            os.path.join(original_data_dir,
+                         file_name.split('/')[-1][:-4] + '.ply'))
         labels = original_data['class']
-        points = np.vstack((original_data['x'], original_data['y'], original_data['z'])).T
+        points = np.vstack(
+            (original_data['x'], original_data['y'], original_data['z'])).T
 
         ##################
         # Visualize data #
         ##################
         if visualization:
-            colors = np.vstack((original_data['red'], original_data['green'], original_data['blue'])).T
+            colors = np.vstack((original_data['red'], original_data['green'],
+                                original_data['blue'])).T
             xyzrgb = np.concatenate([points, colors], axis=-1)
             Plot.draw_pc(xyzrgb)  # visualize raw point clouds
             Plot.draw_pc_sem_ins(points, labels)  # visualize ground-truth
             Plot.draw_pc_sem_ins(points, pred)  # visualize prediction
 
         correct = np.sum(pred == labels)
-        print(str(file_name.split('/')[-1][:-4]) + '_acc:' + str(correct / float(len(labels))))
+        print(
+            str(file_name.split('/')[-1][:-4]) + '_acc:' +
+            str(correct / float(len(labels))))
         test_total_correct += correct
         test_total_seen += len(labels)
 
@@ -51,10 +57,13 @@ if __name__ == '__main__':
 
     iou_list = []
     for n in range(13):
-        iou = true_positive_classes[n] / float(gt_classes[n] + positive_classes[n] - true_positive_classes[n])
+        iou = true_positive_classes[n] / float(gt_classes[n] +
+                                               positive_classes[n] -
+                                               true_positive_classes[n])
         iou_list.append(iou)
     mean_iou = sum(iou_list) / 13.0
-    print('eval accuracy: {}'.format(test_total_correct / float(test_total_seen)))
+    print('eval accuracy: {}'.format(test_total_correct /
+                                     float(test_total_seen)))
     print('mean IOU:{}'.format(mean_iou))
     print(iou_list)
 

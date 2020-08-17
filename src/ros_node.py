@@ -18,12 +18,8 @@ from utils.timer import Timer
 
 class InferenceHelper:
     # TODO move hardcoded definitions into config file
-    label_to_names = {0: 'unlabeled',
-                      1: 'tripod',
-                      2: 'element'}
-    label_to_colors = {0: (255, 255, 255),
-                       1: (255, 0, 0),
-                       2: (0, 255, 0)}
+    label_to_names = {0: 'unlabeled', 1: 'tripod', 2: 'element'}
+    label_to_colors = {0: (255, 255, 255), 1: (255, 0, 0), 2: (0, 255, 0)}
 
     def __init__(self, checkpoint_path=None):
         # init network
@@ -36,7 +32,9 @@ class InferenceHelper:
         rospy.loginfo('Use device: {}'.format(self.device.type))
         if self.device.type == 'cpu':
             os.environ['LRU_CACHE_CAPACITY'] = '1'
-            rospy.loginfo('Set LRU_CACHE_CAPACITY={} to avoid memory leak'.format(os.getenv('LRU_CACHE_CAPACITY')))
+            rospy.loginfo(
+                'Set LRU_CACHE_CAPACITY={} to avoid memory leak'.format(
+                    os.getenv('LRU_CACHE_CAPACITY')))
 
         self.net = Network(cfg)
         self.net.to(self.device)
@@ -75,8 +73,10 @@ class InferenceHelper:
         input_points, input_neighbors, input_pools, input_up_samples = [], [], [], []
         for i in range(cfg.num_layers):
             neighbour_idx = DP.knn_search(batch_pc, batch_pc, cfg.k_n)
-            sub_points = batch_pc[:, :batch_pc.shape[1] // cfg.sub_sampling_ratio[i], :]
-            pool_i = neighbour_idx[:, :batch_pc.shape[1] // cfg.sub_sampling_ratio[i], :]
+            sub_points = batch_pc[:, :batch_pc.shape[1] //
+                                  cfg.sub_sampling_ratio[i], :]
+            pool_i = neighbour_idx[:, :batch_pc.shape[1] //
+                                   cfg.sub_sampling_ratio[i], :]
             up_i = DP.knn_search(sub_points, batch_pc, 1)
             input_points.append(batch_pc)
             input_neighbors.append(neighbour_idx)
@@ -116,8 +116,12 @@ class InferenceHelper:
         logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
         logits = logits.max(dim=1)[1].cpu().numpy()
         colors = [self.label_to_colors[int(label)] for label in logits]
-        pcl_xyzrgb = ros_helper.XYZ_to_XYZRGB(pcl_xyz, color=colors, use_multiple_colors=True)
-        out_msg = ros_helper.pcl_to_ros(pcl_xyzrgb, frmae_id=self.frame_id, timestamp=ros_msg.header.stamp)
+        pcl_xyzrgb = ros_helper.XYZ_to_XYZRGB(pcl_xyz,
+                                              color=colors,
+                                              use_multiple_colors=True)
+        out_msg = ros_helper.pcl_to_ros(pcl_xyzrgb,
+                                        frmae_id=self.frame_id,
+                                        timestamp=ros_msg.header.stamp)
         return out_msg
 
     def process(self, ros_msg):
@@ -132,11 +136,13 @@ class InferenceHelper:
 
 
 class InferenceNode:
+
     def __init__(self):
         # params
         topic_pcl_sub = rospy.get_param('/ros_randla_net/topics/pcl_sub')
         topic_pcl_pub = rospy.get_param('/ros_randla_net/topics/pcl_pub')
-        checkpoint_path = rospy.get_param('/ros_randla_net/network/checkpoint_path')
+        checkpoint_path = rospy.get_param(
+            '/ros_randla_net/network/checkpoint_path')
 
         # model
         rospack = rospkg.RosPack()
@@ -145,7 +151,10 @@ class InferenceNode:
             checkpoint_path=os.path.join(package_path, checkpoint_path))
 
         # subscription and publishing
-        self.pcl_sub = rospy.Subscriber(topic_pcl_sub, PointCloud2, self.callback, queue_size=3)
+        self.pcl_sub = rospy.Subscriber(topic_pcl_sub,
+                                        PointCloud2,
+                                        self.callback,
+                                        queue_size=3)
         self.pcl_pub = rospy.Publisher(topic_pcl_pub, PointCloud2, queue_size=3)
 
     def callback(self, ros_msg):

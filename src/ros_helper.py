@@ -41,7 +41,8 @@ def ros_to_pcl(ros_cloud, field_type='xyzrgb'):
             points_list.append([data[0], data[1], data[2]])
         pcl_data = pcl.PointCloud()
     else:
-        raise NotImplementedError('Unsupported field type: {}'.format(field_type))
+        raise NotImplementedError(
+            'Unsupported field type: {}'.format(field_type))
 
     pcl_data.from_list(points_list)
 
@@ -69,22 +70,14 @@ def pcl_to_ros(pcl_array, frmae_id='world', timestamp=None):
     ros_msg.height = 1
     ros_msg.width = pcl_array.size
 
-    ros_msg.fields.append(PointField(
-        name="x",
-        offset=0,
-        datatype=PointField.FLOAT32, count=1))
-    ros_msg.fields.append(PointField(
-        name="y",
-        offset=4,
-        datatype=PointField.FLOAT32, count=1))
-    ros_msg.fields.append(PointField(
-        name="z",
-        offset=8,
-        datatype=PointField.FLOAT32, count=1))
-    ros_msg.fields.append(PointField(
-        name="rgb",
-        offset=16,
-        datatype=PointField.FLOAT32, count=1))
+    ros_msg.fields.append(
+        PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1))
+    ros_msg.fields.append(
+        PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1))
+    ros_msg.fields.append(
+        PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1))
+    ros_msg.fields.append(
+        PointField(name="rgb", offset=16, datatype=PointField.FLOAT32, count=1))
 
     ros_msg.is_bigendian = False
     ros_msg.point_step = 32
@@ -101,7 +94,9 @@ def pcl_to_ros(pcl_array, frmae_id='world', timestamp=None):
         g = (pack & 0x0000FF00) >> 8
         b = (pack & 0x000000FF)
 
-        buffer.append(struct.pack('ffffBBBBIII', data[0], data[1], data[2], 1.0, b, g, r, 0, 0, 0, 0))
+        buffer.append(
+            struct.pack('ffffBBBBIII', data[0], data[1], data[2], 1.0, b, g, r,
+                        0, 0, 0, 0))
 
     ros_msg.data = "".join(buffer)
 
@@ -149,7 +144,8 @@ def XYZ_to_XYZRGB(XYZ_cloud, color, use_multiple_colors=False):
     float_rgb = rgb_to_float(color) if not use_multiple_colors else None
 
     for idx, data in enumerate(XYZ_cloud):
-        float_rgb = rgb_to_float(color[idx]) if use_multiple_colors else float_rgb
+        float_rgb = rgb_to_float(
+            color[idx]) if use_multiple_colors else float_rgb
         points_list.append([data[0], data[1], data[2], float_rgb])
 
     XYZRGB_cloud.from_list(points_list)

@@ -51,7 +51,8 @@ class Timer(object):
         self._start -= rospy.Time.from_seconds(duration)
 
     def log_and_restart(self, text):
-        if not self.enabled: return
+        if not self.enabled:
+            return
 
         if text not in self.log:
             self.log[text] = 0
@@ -64,7 +65,8 @@ class Timer(object):
         self.counter = OrderedDict()
 
     def print_log(self):
-        if not self.enabled: return
+        if not self.enabled:
+            return
 
         rospy.loginfo('')
         rospy.loginfo('Profiling')
@@ -73,7 +75,8 @@ class Timer(object):
         rospy.loginfo('-' * 30)
         total = 0.
         for k, v in self.log.items():
-            rospy.loginfo('|{:<20}|{:<10.4f}|'.format(k, v * 1000 / self.counter[k]))
+            rospy.loginfo('|{:<20}|{:<10.4f}|'.format(
+                k, v * 1000 / self.counter[k]))
             total += v * 1000 / self.counter[k]
         rospy.loginfo('-' * 30)
         rospy.loginfo('|{:<20}|{:<10.4f}|'.format('total', total))

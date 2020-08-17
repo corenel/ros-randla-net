@@ -18,8 +18,8 @@ from utils.nearest_neighbors.lib.python import nearest_neighbors
 
 
 class ConfigQDH:
-    root = '/media/kx/yangxm/qdh/data/ROI_scan'    # train data
-    test_root = '/media/kx/yangxm/qdh/data/raw_scan'    # test_data
+    root = '/media/kx/yangxm/qdh/data/ROI_scan'  # train data
+    test_root = '/media/kx/yangxm/qdh/data/raw_scan'  # test_data
     k_n = 16  # KNN
     num_layers = 4  # Number of layers
     num_points = 4096  # Number of input points
@@ -32,9 +32,12 @@ class ConfigQDH:
     # train_steps = 500  # Number of steps per epochs
     # val_steps = 100  # Number of validation steps per epoch
 
-    sub_sampling_ratio = [4, 4, 4, 4]  # sampling ratio of random sampling at each layer
+    sub_sampling_ratio = [4, 4, 4,
+                          4]  # sampling ratio of random sampling at each layer
     d_out = [16, 64, 128, 256]  # feature dimension
-    num_sub_points = [num_points // 4, num_points // 16, num_points // 64, num_points // 256]
+    num_sub_points = [
+        num_points // 4, num_points // 16, num_points // 64, num_points // 256
+    ]
 
     noise_init = 3.5  # noise initial parameter
     max_epoch = 100  # maximum epoch during training
@@ -50,8 +53,9 @@ class ConfigQDH:
 
     saving = True
     saving_path = None
-    train = [0,1,2,3,4,5,6,7,9,10]
+    train = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
     valid = [8]
+
 
 class ConfigSemanticKITTI:
     k_n = 16  # KNN
@@ -65,9 +69,12 @@ class ConfigSemanticKITTI:
     train_steps = 500  # Number of steps per epochs
     val_steps = 100  # Number of validation steps per epoch
 
-    sub_sampling_ratio = [4, 4, 4, 4]  # sampling ratio of random sampling at each layer
+    sub_sampling_ratio = [4, 4, 4,
+                          4]  # sampling ratio of random sampling at each layer
     d_out = [16, 64, 128, 256]  # feature dimension
-    num_sub_points = [num_points // 4, num_points // 16, num_points // 64, num_points // 256]
+    num_sub_points = [
+        num_points // 4, num_points // 16, num_points // 64, num_points // 256
+    ]
 
     noise_init = 3.5  # noise initial parameter
     max_epoch = 100  # maximum epoch during training
@@ -91,7 +98,8 @@ class ConfigS3DIS:
     train_steps = 500  # Number of steps per epochs
     val_steps = 100  # Number of validation steps per epoch
 
-    sub_sampling_ratio = [4, 4, 4, 4, 2]  # sampling ratio of random sampling at each layer
+    sub_sampling_ratio = [4, 4, 4, 4,
+                          2]  # sampling ratio of random sampling at each layer
     d_out = [16, 64, 128, 256, 512]  # feature dimension
 
     noise_init = 3.5  # noise initial parameter
@@ -116,7 +124,8 @@ class ConfigSemantic3D:
     train_steps = 500  # Number of steps per epochs
     val_steps = 100  # Number of validation steps per epoch
 
-    sub_sampling_ratio = [4, 4, 4, 4, 2]  # sampling ratio of random sampling at each layer
+    sub_sampling_ratio = [4, 4, 4, 4,
+                          2]  # sampling ratio of random sampling at each layer
     d_out = [16, 64, 128, 256, 512]  # feature dimension
 
     noise_init = 3.5  # noise initial parameter
@@ -139,15 +148,22 @@ class ConfigSemantic3D:
 
 
 class DataProcessing:
+
     @staticmethod
     def load_pc_semantic3d(filename):
-        pc_pd = pd.read_csv(filename, header=None, delim_whitespace=True, dtype=np.float16)
+        pc_pd = pd.read_csv(filename,
+                            header=None,
+                            delim_whitespace=True,
+                            dtype=np.float16)
         pc = pc_pd.values
         return pc
 
     @staticmethod
     def load_label_semantic3d(filename):
-        label_pd = pd.read_csv(filename, header=None, delim_whitespace=True, dtype=np.uint8)
+        label_pd = pd.read_csv(filename,
+                               header=None,
+                               delim_whitespace=True,
+                               dtype=np.uint8)
         cloud_labels = label_pd.values
         return cloud_labels
 
@@ -179,13 +195,20 @@ class DataProcessing:
             seq_path = join(dataset_path, seq_id)
             pc_path = join(seq_path, 'velodyne')
             if seq_id == '08':
-                val_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                val_file_list.append(
+                    [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
                 if seq_id == test_scan_num:
-                    test_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                    test_file_list.append([
+                        join(pc_path, f) for f in np.sort(os.listdir(pc_path))
+                    ])
             elif int(seq_id) >= 11 and seq_id == test_scan_num:
-                test_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
-            elif seq_id in ['00', '01', '02', '03', '04', '05', '06', '07', '09', '10']:
-                train_file_list.append([join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+                test_file_list.append(
+                    [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+            elif seq_id in [
+                    '00', '01', '02', '03', '04', '05', '06', '07', '09', '10'
+            ]:
+                train_file_list.append(
+                    [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
 
         train_file_list = np.concatenate(train_file_list, axis=0)
         val_file_list = np.concatenate(val_file_list, axis=0)
@@ -203,7 +226,10 @@ class DataProcessing:
         :param k: Number of neighbours in knn search
         :return: neighbor_idx: neighboring points indexes, B*N2*k
         """
-        neighbor_idx = nearest_neighbors.knn_batch(support_pts, query_pts, k, omp=True)
+        neighbor_idx = nearest_neighbors.knn_batch(support_pts,
+                                                   query_pts,
+                                                   k,
+                                                   omp=True)
         return neighbor_idx.astype(np.int32)
 
     @staticmethod
@@ -234,7 +260,11 @@ class DataProcessing:
         return data_list
 
     @staticmethod
-    def grid_sub_sampling(points, features=None, labels=None, grid_size=0.1, verbose=0):
+    def grid_sub_sampling(points,
+                          features=None,
+                          labels=None,
+                          grid_size=0.1,
+                          verbose=0):
         """
         CPP wrapper for a grid sub_sampling (method = barycenter for points and features
         :param points: (N, 3) matrix of input points
@@ -246,13 +276,24 @@ class DataProcessing:
         """
 
         if (features is None) and (labels is None):
-            return cpp_subsampling.compute(points, sampleDl=grid_size, verbose=verbose)
+            return cpp_subsampling.compute(points,
+                                           sampleDl=grid_size,
+                                           verbose=verbose)
         elif labels is None:
-            return cpp_subsampling.compute(points, features=features, sampleDl=grid_size, verbose=verbose)
+            return cpp_subsampling.compute(points,
+                                           features=features,
+                                           sampleDl=grid_size,
+                                           verbose=verbose)
         elif features is None:
-            return cpp_subsampling.compute(points, classes=labels, sampleDl=grid_size, verbose=verbose)
+            return cpp_subsampling.compute(points,
+                                           classes=labels,
+                                           sampleDl=grid_size,
+                                           verbose=verbose)
         else:
-            return cpp_subsampling.compute(points, features=features, classes=labels, sampleDl=grid_size,
+            return cpp_subsampling.compute(points,
+                                           features=features,
+                                           classes=labels,
+                                           sampleDl=grid_size,
                                            verbose=verbose)
 
     @staticmethod
@@ -287,21 +328,30 @@ class DataProcessing:
         # pre-calculate the number of points in each category
         num_per_class = []
         if dataset_name is 'S3DIS':
-            num_per_class = np.array([3370714, 2856755, 4919229, 318158, 375640, 478001, 974733,
-                                      650464, 791496, 88727, 1284130, 229758, 2272837], dtype=np.int32)
+            num_per_class = np.array([
+                3370714, 2856755, 4919229, 318158, 375640, 478001, 974733,
+                650464, 791496, 88727, 1284130, 229758, 2272837
+            ],
+                                     dtype=np.int32)
         elif dataset_name is 'Semantic3D':
-            num_per_class = np.array([5181602, 5012952, 6830086, 1311528, 10476365, 946982, 334860, 269353],
+            num_per_class = np.array([
+                5181602, 5012952, 6830086, 1311528, 10476365, 946982, 334860,
+                269353
+            ],
                                      dtype=np.int32)
         elif dataset_name is 'SemanticKITTI':
-            num_per_class = np.array([55437630, 320797, 541736, 2578735, 3274484, 552662, 184064, 78858,
-                                      240942562, 17294618, 170599734, 6369672, 230413074, 101130274, 476491114,
-                                      9833174, 129609852, 4506626, 1168181])
+            num_per_class = np.array([
+                55437630, 320797, 541736, 2578735, 3274484, 552662, 184064,
+                78858, 240942562, 17294618, 170599734, 6369672, 230413074,
+                101130274, 476491114, 9833174, 129609852, 4506626, 1168181
+            ])
         weight = num_per_class / float(sum(num_per_class))
         ce_label_weight = 1 / (weight + 0.02)
         return np.expand_dims(ce_label_weight, axis=0)
 
 
 class Plot:
+
     @staticmethod
     def random_colors(N, bright=True, seed=0):
         brightness = 1.0 if bright else 0.7
@@ -335,7 +385,8 @@ class Plot:
         if plot_colors is not None:
             ins_colors = plot_colors
         else:
-            ins_colors = Plot.random_colors(len(np.unique(pc_sem_ins)) + 1, seed=2)
+            ins_colors = Plot.random_colors(len(np.unique(pc_sem_ins)) + 1,
+                                            seed=2)
 
         ##############################
         sem_ins_labels = np.unique(pc_sem_ins)
@@ -356,14 +407,17 @@ class Plot:
             ### bbox
             valid_xyz = pc_xyz[valid_ind]
 
-            xmin = np.min(valid_xyz[:, 0]);
+            xmin = np.min(valid_xyz[:, 0])
             xmax = np.max(valid_xyz[:, 0])
-            ymin = np.min(valid_xyz[:, 1]);
+            ymin = np.min(valid_xyz[:, 1])
             ymax = np.max(valid_xyz[:, 1])
-            zmin = np.min(valid_xyz[:, 2]);
+            zmin = np.min(valid_xyz[:, 2])
             zmax = np.max(valid_xyz[:, 2])
             sem_ins_bbox.append(
-                [[xmin, ymin, zmin], [xmax, ymax, zmax], [min(tp[0], 1.), min(tp[1], 1.), min(tp[2], 1.)]])
+                [[xmin, ymin, zmin], [xmax, ymax, zmax],
+                 [min(tp[0], 1.),
+                  min(tp[1], 1.),
+                  min(tp[2], 1.)]])
 
         Y_semins = np.concatenate([pc_xyz[:, 0:3], Y_colors], axis=-1)
         Plot.draw_pc(Y_semins)
