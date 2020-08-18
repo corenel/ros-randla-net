@@ -7,7 +7,7 @@ import torch.utils.data as data
 from tqdm import tqdm
 
 from configs import ConfigQDH as cfg
-from datasets.qdh import qdhset
+from datasets.qdh import QdhDataset
 from models.RandLANet import *
 from utils.loss_utils import compute_acc, IoUCalculator
 from utils.network_utils import load_network
@@ -27,7 +27,7 @@ def embed():
     args = parser.parse_args()
 
     # ===============Create dataset===================
-    test_dataset = qdhset(cfg, mode='test')
+    test_dataset = QdhDataset(cfg, mode='test')
 
     # ===================Resume====================
     model, optimizer, start_epoch, scheduler = load_network(
@@ -77,22 +77,22 @@ def visualize(xyz, pred, short_name):
     pred_label_set = list(set(pred))
     pred_label_set.sort()
     print(pred_label_set)
-    viz_point = open3d.PointCloud()
-    point_cloud = open3d.PointCloud()
+    viz_point = open3d.geometry.PointCloud()
+    point_cloud = open3d.geometry.PointCloud()
     for id_i, label_i in enumerate(pred_label_set):
         # print('sem_label:', label_i, )
         index = np.argwhere(pred == label_i).reshape(-1)
         sem_cluster = xyz[index, :]
-        point_cloud.points = open3d.Vector3dVector(sem_cluster)
+        point_cloud.points = open3d.utility.Vector3dVector(sem_cluster)
         point_cloud.paint_uniform_color(color[id_i])
         viz_point += point_cloud
 
-    open3d.draw_geometries([viz_point],
-                           window_name=short_name[0],
-                           width=1920,
-                           height=1080,
-                           left=50,
-                           top=50)
+    open3d.visualization.draw_geometries([viz_point],
+                                         window_name=short_name[0],
+                                         width=1920,
+                                         height=1080,
+                                         left=50,
+                                         top=50)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
+
 class ConfigQDH:
-    root = '/media/kx/yangxm/qdh/data/ROI_scan'  # train data
-    test_root = '/media/kx/yangxm/qdh/data/raw_scan'  # test_data
+    root = '/media/home/Temp/715三脚架检测项目/datasets/data/ROI_scan'  # train data
+    test_root = '/media/home/Temp/715三脚架检测项目/datasets/data/raw_scan'  # test_data
     k_n = 16  # KNN
     num_layers = 4  # Number of layers
     num_points = 4096  # Number of input points
@@ -36,3 +39,6 @@ class ConfigQDH:
     saving_path = None
     train = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
     valid = [8]
+
+    def __init__(self):
+        pass

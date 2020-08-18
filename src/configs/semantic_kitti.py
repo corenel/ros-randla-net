@@ -25,3 +25,6 @@ class ConfigSemanticKITTI:
     train_sum_dir = 'train_log'
     saving = True
     saving_path = None
+
+    def __init__(self):
+        pass

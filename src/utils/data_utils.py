@@ -1,4 +1,5 @@
-from open3d import linux as open3d
+import open3d
+import glob
 from os.path import join
 import numpy as np
 import colorsys, random, os, sys
@@ -16,7 +17,6 @@ from utils.nearest_neighbors.lib.python import nearest_neighbors
 
 
 class DataProcessing:
-
     def __init__(self):
         pass
 
@@ -56,37 +56,26 @@ class DataProcessing:
         return sem_label.astype(np.int32)
 
     @staticmethod
-    def get_file_list(dataset_path, test_scan_num):
-        seq_list = np.sort(os.listdir(dataset_path))
+    def get_file_list(cfg):
+        # seq_list = np.sort(os.listdir(cfg.root))
 
-        train_file_list = []
-        test_file_list = []
-        val_file_list = []
-        for seq_id in seq_list:
-            seq_path = join(dataset_path, seq_id)
-            pc_path = join(seq_path, 'velodyne')
-            if seq_id == '08':
-                val_file_list.append(
-                    [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
-                if seq_id == test_scan_num:
-                    test_file_list.append([
-                        join(pc_path, f) for f in np.sort(os.listdir(pc_path))
-                    ])
-            elif int(seq_id) >= 11 and seq_id == test_scan_num:
-                test_file_list.append(
-                    [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
-            elif seq_id in [
-                '00', '01', '02', '03', '04', '05', '06', '07', '09', '10'
-            ]:
-                train_file_list.append(
-                    [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
+        train_file_list, val_file_list, test_file_list = [], [], []
+        train_file_list = sorted(glob.glob(os.path.join(cfg.root, '*.pcd')))
+        # for sq in cfg.valid:
+        # # for sq in range(11):
+        #     seqstr = '{0:02d}'.format(int(sq))
+        #     val_file_list += sorted(glob.glob(os.path.join(cfg.root, seqstr, 'velodyne', '*.bin')))
+        # # for sq in cfg.valid:     # FIXME
+        # # for sq in ['00','01','02','03','04','05','06','07','08','09','10']:
+        # for sq in ['21']: # '11','12','13','14','15','16','17','18','19','20'
+        #     seqstr = '{0:02d}'.format(int(sq))
+        # test_file_list = sorted(glob.glob(os.path.join('/media/kx/yangxm/qdh/data/ROI_scan', '*.pcd')))
+        test_file_list = sorted(glob.glob(os.path.join(cfg.test_root,
+                                                       '*.pcd')))
 
-        train_file_list = np.concatenate(train_file_list, axis=0)
-        val_file_list = np.concatenate(val_file_list, axis=0)
-        if test_scan_num != 'None':
-            test_file_list = np.concatenate(test_file_list, axis=0)
-        else:
-            test_file_list = None
+        # train_file_list = train_file_list[:22]
+        # val_file_list = val_file_list[:22]
+
         return train_file_list, val_file_list, test_file_list
 
     @staticmethod
@@ -101,6 +90,18 @@ class DataProcessing:
                                                    query_pts,
                                                    k,
                                                    omp=True)
+        return neighbor_idx.astype(np.int32)
+
+    @staticmethod
+    def knn_batch(support_pts, query_pts, k):
+        """
+        :param support_pts: points you have, B*N1*3
+        :param query_pts: points you want to know the neighbour index, B*N2*3
+        :param k: Number of neighbours in knn search
+        :return: neighbor_idx: neighboring points indexes, B*N2*k
+        """
+
+        neighbor_idx = nearest_neighbors.knn_batch(support_pts, query_pts, k, omp=True)
         return neighbor_idx.astype(np.int32)
 
     @staticmethod
@@ -222,7 +223,6 @@ class DataProcessing:
 
 
 class Plot:
-
     def __init__(self):
         pass
 
@@ -237,16 +237,16 @@ class Plot:
 
     @staticmethod
     def draw_pc(pc_xyzrgb):
-        pc = open3d.PointCloud()
-        pc.points = open3d.Vector3dVector(pc_xyzrgb[:, 0:3])
+        pc = open3d.geometry.PointCloud()
+        pc.points = open3d.utility.Vector3dVector(pc_xyzrgb[:, 0:3])
         if pc_xyzrgb.shape[1] == 3:
-            open3d.draw_geometries([pc])
+            open3d.visualization.draw_geometries([pc])
             return 0
         if np.max(pc_xyzrgb[:, 3:6]) > 20:  ## 0-255
-            pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6] / 255.)
+            pc.colors = open3d.utility.Vector3dVector(pc_xyzrgb[:, 3:6] / 255.)
         else:
-            pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6])
-        open3d.draw_geometries([pc])
+            pc.colors = open3d.utility.Vector3dVector(pc_xyzrgb[:, 3:6])
+        open3d.visualization.draw_geometries([pc])
         return 0
 
     @staticmethod

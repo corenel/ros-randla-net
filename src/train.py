@@ -11,7 +11,7 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm, trange
 
 from configs import ConfigQDH as cfg
-from datasets.qdh import qdhset
+from datasets.qdh import QdhDataset
 from utils.loss_utils import compute_acc, IoUCalculator
 from utils.network_utils import load_network
 
@@ -37,7 +37,7 @@ def embed():
         os.mkdir(args.logdir)
 
     # ===============Create dataset===================
-    train_dataset = qdhset(cfg, mode='train')
+    train_dataset = QdhDataset(cfg, mode='train')
     tb_writer = SummaryWriter(logdir=os.path.join(args.logdir))
 
     # ===================Resume====================

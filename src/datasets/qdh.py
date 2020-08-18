@@ -8,7 +8,7 @@ from configs import ConfigQDH as cfg
 from utils.data_utils import DataProcessing as DP
 
 
-class qdhset(data.Dataset):
+class QdhDataset(data.Dataset):
     def __init__(self, cfg, mode, test_id=None):
         self.name = 'qdh'
         self.label_to_names = {0: 'background', 1: 'triangle'}

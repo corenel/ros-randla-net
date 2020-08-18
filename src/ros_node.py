@@ -72,12 +72,12 @@ class InferenceHelper:
         # tf amp
         input_points, input_neighbors, input_pools, input_up_samples = [], [], [], []
         for i in range(cfg.num_layers):
-            neighbour_idx = DP.knn_search(batch_pc, batch_pc, cfg.k_n)
+            neighbour_idx = DP.knn_batch(batch_pc, batch_pc, cfg.k_n)
             sub_points = batch_pc[:, :batch_pc.shape[1] //
                                   cfg.sub_sampling_ratio[i], :]
             pool_i = neighbour_idx[:, :batch_pc.shape[1] //
                                    cfg.sub_sampling_ratio[i], :]
-            up_i = DP.knn_search(sub_points, batch_pc, 1)
+            up_i = DP.knn_batch(sub_points, batch_pc, 1)
             input_points.append(batch_pc)
             input_neighbors.append(neighbour_idx)
             input_pools.append(pool_i)
@@ -136,7 +136,6 @@ class InferenceHelper:
 
 
 class InferenceNode:
-
     def __init__(self):
         # params
         topic_pcl_sub = rospy.get_param('/ros_randla_net/topics/pcl_sub')
@@ -155,7 +154,9 @@ class InferenceNode:
                                         PointCloud2,
                                         self.callback,
                                         queue_size=3)
-        self.pcl_pub = rospy.Publisher(topic_pcl_pub, PointCloud2, queue_size=3)
+        self.pcl_pub = rospy.Publisher(topic_pcl_pub,
+                                       PointCloud2,
+                                       queue_size=3)
 
     def callback(self, ros_msg):
         out_msg = self.helper.process(ros_msg)
