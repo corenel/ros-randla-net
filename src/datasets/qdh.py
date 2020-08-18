@@ -4,8 +4,8 @@ import torch
 import torch.utils.data as data
 from sklearn.neighbors import KDTree
 
-from utils.helper_tool import ConfigQDH as cfg
-from utils.helper_tool import DataProcessing as DP
+from configs import ConfigQDH as cfg
+from utils.data_utils import DataProcessing as DP
 
 
 class qdhset(data.Dataset):

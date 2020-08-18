@@ -1,4 +1,4 @@
-# from open3d import linux as open3d
+from open3d import linux as open3d
 from os.path import join
 import numpy as np
 import colorsys, random, os, sys
@@ -13,141 +13,12 @@ sys.path.append(os.path.join(BASE_DIR, 'utils'))
 
 from utils.cpp_wrappers.cpp_subsampling import grid_subsampling as cpp_subsampling
 from utils.nearest_neighbors.lib.python import nearest_neighbors
-# import cpp_wrappers.cpp_subsampling.grid_subsampling as cpp_subsampling
-# import nearest_neighbors.lib.python.nearest_neighbors as nearest_neighbors
-
-
-class ConfigQDH:
-    root = '/media/kx/yangxm/qdh/data/ROI_scan'  # train data
-    test_root = '/media/kx/yangxm/qdh/data/raw_scan'  # test_data
-    k_n = 16  # KNN
-    num_layers = 4  # Number of layers
-    num_points = 4096  # Number of input points
-    num_classes = 2  # Number of valid classes
-    sub_grid_size = 0.06  # preprocess_parameter
-
-    batch_size = 8  # batch_size during training
-    num_workers = 16
-    # val_batch_size = 20  # batch_size during validation and test
-    # train_steps = 500  # Number of steps per epochs
-    # val_steps = 100  # Number of validation steps per epoch
-
-    sub_sampling_ratio = [4, 4, 4,
-                          4]  # sampling ratio of random sampling at each layer
-    d_out = [16, 64, 128, 256]  # feature dimension
-    num_sub_points = [
-        num_points // 4, num_points // 16, num_points // 64, num_points // 256
-    ]
-
-    noise_init = 3.5  # noise initial parameter
-    max_epoch = 100  # maximum epoch during training
-    learning_rate = 1e-2  # initial learning rate
-    # lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate
-    step_size = 1
-    decay_rate = 0.95
-    delta_d = 1.5
-    delta_v = 0.5
-    bandwidth = 1.5
-    initial_temperature = 1.0
-    weight_decay = 1e-6
-
-    saving = True
-    saving_path = None
-    train = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
-    valid = [8]
-
-
-class ConfigSemanticKITTI:
-    k_n = 16  # KNN
-    num_layers = 4  # Number of layers
-    num_points = 4096 * 11  # Number of input points
-    num_classes = 19  # Number of valid classes
-    sub_grid_size = 0.06  # preprocess_parameter
-
-    batch_size = 6  # batch_size during training
-    val_batch_size = 20  # batch_size during validation and test
-    train_steps = 500  # Number of steps per epochs
-    val_steps = 100  # Number of validation steps per epoch
-
-    sub_sampling_ratio = [4, 4, 4,
-                          4]  # sampling ratio of random sampling at each layer
-    d_out = [16, 64, 128, 256]  # feature dimension
-    num_sub_points = [
-        num_points // 4, num_points // 16, num_points // 64, num_points // 256
-    ]
-
-    noise_init = 3.5  # noise initial parameter
-    max_epoch = 100  # maximum epoch during training
-    learning_rate = 1e-2  # initial learning rate
-    lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate
-
-    train_sum_dir = 'train_log'
-    saving = True
-    saving_path = None
-
-
-class ConfigS3DIS:
-    k_n = 16  # KNN
-    num_layers = 5  # Number of layers
-    num_points = 40960  # Number of input points
-    num_classes = 13  # Number of valid classes
-    sub_grid_size = 0.04  # preprocess_parameter
-
-    batch_size = 6  # batch_size during training
-    val_batch_size = 20  # batch_size during validation and test
-    train_steps = 500  # Number of steps per epochs
-    val_steps = 100  # Number of validation steps per epoch
-
-    sub_sampling_ratio = [4, 4, 4, 4,
-                          2]  # sampling ratio of random sampling at each layer
-    d_out = [16, 64, 128, 256, 512]  # feature dimension
-
-    noise_init = 3.5  # noise initial parameter
-    max_epoch = 100  # maximum epoch during training
-    learning_rate = 1e-2  # initial learning rate
-    lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate
-
-    train_sum_dir = 'train_log'
-    saving = True
-    saving_path = None
-
-
-class ConfigSemantic3D:
-    k_n = 16  # KNN
-    num_layers = 5  # Number of layers
-    num_points = 65536  # Number of input points
-    num_classes = 8  # Number of valid classes
-    sub_grid_size = 0.06  # preprocess_parameter
-
-    batch_size = 4  # batch_size during training
-    val_batch_size = 16  # batch_size during validation and test
-    train_steps = 500  # Number of steps per epochs
-    val_steps = 100  # Number of validation steps per epoch
-
-    sub_sampling_ratio = [4, 4, 4, 4,
-                          2]  # sampling ratio of random sampling at each layer
-    d_out = [16, 64, 128, 256, 512]  # feature dimension
-
-    noise_init = 3.5  # noise initial parameter
-    max_epoch = 100  # maximum epoch during training
-    learning_rate = 1e-2  # initial learning rate
-    lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate
-
-    train_sum_dir = 'train_log'
-    saving = True
-    saving_path = None
-
-    augment_scale_anisotropic = True
-    augment_symmetries = [True, False, False]
-    augment_rotation = 'vertical'
-    augment_scale_min = 0.8
-    augment_scale_max = 1.2
-    augment_noise = 0.001
-    augment_occlusion = 'none'
-    augment_color = 0.8
 
 
 class DataProcessing:
+
+    def __init__(self):
+        pass
 
     @staticmethod
     def load_pc_semantic3d(filename):
@@ -205,7 +76,7 @@ class DataProcessing:
                 test_file_list.append(
                     [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
             elif seq_id in [
-                    '00', '01', '02', '03', '04', '05', '06', '07', '09', '10'
+                '00', '01', '02', '03', '04', '05', '06', '07', '09', '10'
             ]:
                 train_file_list.append(
                     [join(pc_path, f) for f in np.sort(os.listdir(pc_path))])
@@ -332,13 +203,13 @@ class DataProcessing:
                 3370714, 2856755, 4919229, 318158, 375640, 478001, 974733,
                 650464, 791496, 88727, 1284130, 229758, 2272837
             ],
-                                     dtype=np.int32)
+                dtype=np.int32)
         elif dataset_name is 'Semantic3D':
             num_per_class = np.array([
                 5181602, 5012952, 6830086, 1311528, 10476365, 946982, 334860,
                 269353
             ],
-                                     dtype=np.int32)
+                dtype=np.int32)
         elif dataset_name is 'SemanticKITTI':
             num_per_class = np.array([
                 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064,
@@ -352,6 +223,9 @@ class DataProcessing:
 
 class Plot:
 
+    def __init__(self):
+        pass
+
     @staticmethod
     def random_colors(N, bright=True, seed=0):
         brightness = 1.0 if bright else 0.7
@@ -362,18 +236,18 @@ class Plot:
         return colors
 
     @staticmethod
-    # def draw_pc(pc_xyzrgb):
-    #     pc = open3d.PointCloud()
-    #     pc.points = open3d.Vector3dVector(pc_xyzrgb[:, 0:3])
-    #     if pc_xyzrgb.shape[1] == 3:
-    #         open3d.draw_geometries([pc])
-    #         return 0
-    #     if np.max(pc_xyzrgb[:, 3:6]) > 20:  ## 0-255
-    #         pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6] / 255.)
-    #     else:
-    #         pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6])
-    #     open3d.draw_geometries([pc])
-    #     return 0
+    def draw_pc(pc_xyzrgb):
+        pc = open3d.PointCloud()
+        pc.points = open3d.Vector3dVector(pc_xyzrgb[:, 0:3])
+        if pc_xyzrgb.shape[1] == 3:
+            open3d.draw_geometries([pc])
+            return 0
+        if np.max(pc_xyzrgb[:, 3:6]) > 20:  ## 0-255
+            pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6] / 255.)
+        else:
+            pc.colors = open3d.Vector3dVector(pc_xyzrgb[:, 3:6])
+        open3d.draw_geometries([pc])
+        return 0
 
     @staticmethod
     def draw_pc_sem_ins(pc_xyz, pc_sem_ins, plot_colors=None):
@@ -404,7 +278,7 @@ class Plot:
 
             Y_colors[valid_ind] = tp
 
-            ### bbox
+            # bbox
             valid_xyz = pc_xyz[valid_ind]
 
             xmin = np.min(valid_xyz[:, 0])

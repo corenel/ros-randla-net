@@ -2,20 +2,18 @@ import argparse
 import datetime
 import logging
 import os
-from collections import defaultdict
 
 import numpy as np
-import torch.nn as nn
 import torch
-import torch.optim as optim
+import torch.nn as nn
 import torch.utils.data as data
 from tensorboardX import SummaryWriter
 from tqdm import tqdm, trange
 
+from configs import ConfigQDH as cfg
 from datasets.qdh import qdhset
-from utils.helper_tool import ConfigQDH as cfg
-from utils.network_utils import load_network
 from utils.loss_utils import compute_acc, IoUCalculator
+from utils.network_utils import load_network
 
 best_loss = np.Inf
 

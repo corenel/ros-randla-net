@@ -11,8 +11,8 @@ from torch import nn
 
 import ros_helper
 from models.RandLANet import Network
-from utils.helper_tool import ConfigQDH as cfg
-from utils.helper_tool import DataProcessing as DP
+from configs import ConfigQDH as cfg
+from utils.data_utils import DataProcessing as DP
 from utils.timer import Timer
 
 

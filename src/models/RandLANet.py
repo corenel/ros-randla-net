@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from utils import pytorch_utils as pt_utils
-from utils.helper_tool import DataProcessing as DP
+from utils.data_utils import DataProcessing as DP
 
 
 class Network(nn.Module):
