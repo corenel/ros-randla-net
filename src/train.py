@@ -2,11 +2,13 @@ import argparse
 import datetime
 import logging
 import os
+from collections import defaultdict
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.utils.data as data
+from torch.utils.data import SubsetRandomSampler
 from tensorboardX import SummaryWriter
 from tqdm import tqdm, trange
 
@@ -38,6 +40,10 @@ def embed():
 
     # ===============Create dataset===================
     train_dataset = QdhDataset(cfg, mode='train')
+    test_dataset = QdhDataset(cfg, mode='test')
+    print('#train: {}'.format(len(train_dataset)))
+    print('#eval: {}'.format(len(test_dataset)))
+
     tb_writer = SummaryWriter(logdir=os.path.join(args.logdir))
 
     # ===================Resume====================
@@ -56,7 +62,6 @@ def embed():
                                        num_workers=cfg.num_workers,
                                        drop_last=False)
         start = datetime.datetime.now()
-        scheduler.step()
         main_index = 0
         all_loss = 0
         model.train()
@@ -131,68 +136,64 @@ def embed():
 
         print(log)
 
-    # def eval_one_epoch(i_epoch):
-    #     model.eval()
-    #     eval_loss = 0
-    #     main_index = 0
-    #     with torch.no_grad():
-    #         test_loader = data.DataLoader(test_dataset,
-    #                                       batch_size=cfg.batch_size,
-    #                                       num_workers=cfg.num_workers,
-    #                                       collate_fn=train_dataset.collate_fn,
-    #                                       shuffle=False,
-    #                                       drop_last=False)
-    #         eval_scalars = defaultdict(list)
-    #         eval_iou_calc = IoUCalculator(cfg)
-    #         if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
-    #             test_loader = tqdm(test_loader, ncols=100)
-    #         for i, (short_name, inputs) in enumerate(test_loader):
-    #             batch_size = len(short_name)
-    #             for key in inputs:
-    #                 if type(inputs[key]) is list:
-    #                     for i in range(len(inputs[key])):
-    #                         inputs[key][i] = inputs[key][i].cuda()
-    #                 else:
-    #                     inputs[key] = inputs[key].cuda()
-    #
-    #             f_out = model(inputs)
-    #             # loss1 = criterion['discriminative'](embedding, inputs["masks"], inputs["labels"])
-    #             loss, valid_logits, valid_labels = Logits(
-    #                 f_out, inputs['labels'], cfg)
-    #
-    #             acc = compute_acc(valid_logits, valid_labels)
-    #             eval_iou_calc.add_data(valid_logits, valid_labels)
-    #             # loss = loss1 + loss2
-    #             main_index += batch_size
-    #             eval_loss += loss * batch_size
-    #
-    #         eval_log = '> | Eval |'
-    #         eval_log += 'eval_loss : {:.4f} |'.format(eval_loss /
-    #                                                   len(test_dataset))
-    #         eval_mean_iou, eval_iou_list = eval_iou_calc.compute_iou()
-    #         eval_log += 'mean IoU:{:.1f} |'.format(eval_mean_iou * 100)
-    #         s = 'IoU: '
-    #         for iou_tmp in eval_iou_list:
-    #             s += '{:5.2f} |'.format(100 * iou_tmp)
-    #         eval_log += s
-    #
-    #         tb_writer.add_scalar(
-    #             'eval_loss', (eval_loss) / len(test_dataset),
-    #                          int(i_epoch) * len(test_loader) * int(cfg.batch_size))
-    #         tb_writer.add_scalar(
-    #             'eval_miou', eval_mean_iou,
-    #             int(i_epoch) * len(test_loader) * int(cfg.batch_size))
-    #
-    #         fname = os.path.join(args.logdir, 'train.log')
-    #         with open(fname, 'a') as fp:
-    #             fp.write(eval_log + '\n')
-    #
-    #         print(eval_log)
+    def eval_one_epoch(i_epoch):
+        model.eval()
+        main_index = 0
+        with torch.no_grad():
+            indices = np.random.choice(range(len(test_dataset)), len(test_dataset) // 10)
+            test_loader = data.DataLoader(test_dataset,
+                                          batch_size=cfg.eval_batch_size,
+                                          sampler=SubsetRandomSampler(indices),
+                                          num_workers=cfg.num_workers,
+                                          collate_fn=test_dataset.collate_fn,
+                                          shuffle=False,
+                                          drop_last=False)
+            eval_scalars = defaultdict(list)
+            eval_iou_calc = IoUCalculator(cfg)
+            if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
+                test_loader = tqdm(test_loader, ncols=100)
+            for i, (short_name, inputs) in enumerate(test_loader):
+                batch_size = len(short_name)
+                for key in inputs:
+                    if type(inputs[key]) is list:
+                        for i in range(len(inputs[key])):
+                            inputs[key][i] = inputs[key][i].cuda()
+                    else:
+                        inputs[key] = inputs[key].cuda()
+
+                f_out = model(inputs)
+                logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+                labels = inputs['labels'].reshape(-1)
+                # acc = compute_acc(logits, labels)
+                eval_iou_calc.add_data(logits, labels)
+                # loss = loss1 + loss2
+                main_index += batch_size
+
+            eval_log = '> | Eval |'
+            eval_mean_iou, eval_iou_list = eval_iou_calc.compute_iou()
+            eval_log += 'mean IoU:{:.1f} |'.format(eval_mean_iou * 100)
+            s = 'IoU: '
+            for iou_tmp in eval_iou_list:
+                s += '{:5.2f} |'.format(100 * iou_tmp)
+            eval_log += s
+
+            tb_writer.add_scalar(
+                'eval_miou', eval_mean_iou,
+                int(i_epoch) * len(test_loader) * int(cfg.batch_size))
+
+            fname = os.path.join(args.logdir, 'eval.log')
+            with open(fname, 'a') as fp:
+                fp.write(eval_log + '\n')
+
+            print(eval_log)
 
     # with torchsnooper.snoop():
     epochs = trange(cfg.max_epoch, leave=True, desc="Epoch")
     for i_epoch in range(start_epoch, cfg.max_epoch):
         train_one_epoch(i_epoch)
+        if i_epoch % 5 == 0:
+            eval_one_epoch(i_epoch)
+        scheduler.step()
         print('-' * 30)
 
 

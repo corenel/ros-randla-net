@@ -135,3 +135,4 @@ dmypy.json
 !src/utils/nearest_neighbors/lib/python/__init__.py
 .egg_info
 *.pth
+asset
