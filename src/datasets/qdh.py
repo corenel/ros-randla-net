@@ -9,19 +9,27 @@ from utils.data_utils import DataProcessing as DP
 
 
 class QdhDataset(data.Dataset):
-    def __init__(self, cfg, mode, test_id=None):
+    def __init__(self, config, mode, test_id=None):
         self.name = 'qdh'
         self.label_to_names = {0: 'background', 1: 'triangle'}
-        self.num_classes = cfg.num_classes
-        # self.label_values = np.sort([k for k, v in self.label_to_names.items()])
-        # self.label_to_idx = {l: i for i, l in enumerate(self.label_values)}
-        # self.ignored_labels = np.sort([0])
+        self.num_classes = config.num_classes
+        self.label_values = np.sort(
+            [k for k, v in self.label_to_names.items()])
+        self.label_to_idx = {l: i for i, l in enumerate(self.label_values)}
+        self.ignored_labels = np.sort([0])
+
+        config.ignored_label_inds = [
+            self.label_to_idx[ign_label] for ign_label in self.ignored_labels
+        ]
+        cfg.class_weights = DP.get_class_weights(self.name)
+        # print('ignored label indices: {}'.format(cfg.ignored_label_inds))
+        # print('class weights: {}'.format(cfg.class_weights))
 
         # if mode == 'test':
         #     self.test_scan_number = str(test_id)
 
         self.mode = mode
-        train_list, val_list, test_list = DP.get_file_list(cfg)
+        train_list, val_list, test_list = DP.get_file_list(config)
         if mode == 'train':
             self.data_list = train_list
         # elif mode == 'eval':

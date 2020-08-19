@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from utils.data_utils import DataProcessing as DP
+
 
 class ConfigQDH:
     root = '/datasets/data/ROI_scan'  # train data
-    test_root = '/datasets/data/raw_scan'  # test_data
+    test_root = '/datasets/data/ROI_scan'  # test_data
     k_n = 16  # KNN
     num_layers = 4  # Number of layers
     num_points = 4096  # Number of input points
@@ -11,7 +13,7 @@ class ConfigQDH:
     sub_grid_size = 0.06  # preprocess_parameter
 
     batch_size = 32  # batch_size during training
-    eval_batch_size = 8  # batch_size during training
+    eval_batch_size = 1  # batch_size during training
     num_workers = 16
     # val_batch_size = 20  # batch_size during validation and test
     # train_steps = 500  # Number of steps per epochs

@@ -104,7 +104,10 @@ class DataProcessing:
         :return: neighbor_idx: neighboring points indexes, B*N2*k
         """
 
-        neighbor_idx = nearest_neighbors.knn_batch(support_pts, query_pts, k, omp=True)
+        neighbor_idx = nearest_neighbors.knn_batch(support_pts,
+                                                   query_pts,
+                                                   k,
+                                                   omp=True)
         return neighbor_idx.astype(np.int32)
 
     @staticmethod
@@ -207,19 +210,22 @@ class DataProcessing:
                 3370714, 2856755, 4919229, 318158, 375640, 478001, 974733,
                 650464, 791496, 88727, 1284130, 229758, 2272837
             ],
-                dtype=np.int32)
+                                     dtype=np.int32)
         elif dataset_name is 'Semantic3D':
             num_per_class = np.array([
                 5181602, 5012952, 6830086, 1311528, 10476365, 946982, 334860,
                 269353
             ],
-                dtype=np.int32)
+                                     dtype=np.int32)
         elif dataset_name is 'SemanticKITTI':
             num_per_class = np.array([
                 55437630, 320797, 541736, 2578735, 3274484, 552662, 184064,
                 78858, 240942562, 17294618, 170599734, 6369672, 230413074,
                 101130274, 476491114, 9833174, 129609852, 4506626, 1168181
             ])
+        elif dataset_name is 'qdh':
+            # TODO check actual number
+            num_per_class = np.array([1, 1], dtype=np.int32)
         weight = num_per_class / float(sum(num_per_class))
         ce_label_weight = 1 / (weight + 0.02)
         return np.expand_dims(ce_label_weight, axis=0)

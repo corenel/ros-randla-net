@@ -12,8 +12,8 @@ class IoUCalculator:
         self.cfg = cfg
 
     def add_data(self, valid_logits, valid_labels):
-        logits = valid_logits
-        labels = valid_labels
+        logits = valid_logits.view(-1, self.cfg.num_classes)
+        labels = valid_labels.view(-1, 1)
         pred = logits.max(dim=1)[1]
         pred_valid = pred.detach().cpu().numpy()
         labels_valid = labels.detach().cpu().numpy()
@@ -51,14 +51,19 @@ class IoUCalculator:
 
 def compute_acc(valid_logits, valid_labels):
     valid_logits = valid_logits.max(dim=1)[1]
-    acc = (valid_logits == valid_labels).sum().float() / float(valid_labels.shape[0])
+    acc = (valid_logits == valid_labels).sum().float() / float(
+        valid_labels.shape[0])
     return acc
 
 
-def compute_loss(end_points, cfg):
-    logits = end_points['logits']
-    labels = end_points['labels']
+def compute_loss_simple(logits, labels, cfg):
+    logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
+    labels = labels.reshape(-1)
+    loss = get_loss(logits, labels, cfg.class_weights)
+    return loss, logits, labels
 
+
+def compute_loss(logits, labels, cfg):
     logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
     labels = labels.reshape(-1)
 
@@ -82,10 +87,7 @@ def compute_loss(end_points, cfg):
         ], 0)
     valid_labels = torch.gather(reducing_list, 0, valid_labels_init)
     loss = get_loss(valid_logits, valid_labels, cfg.class_weights)
-    end_points['valid_logits'], end_points[
-        'valid_labels'] = valid_logits, valid_labels
-    end_points['loss'] = loss
-    return loss, end_points
+    return loss, valid_logits, valid_labels
 
 
 def get_loss(logits, labels, pre_cal_weights):

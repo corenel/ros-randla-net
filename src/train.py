@@ -16,6 +16,7 @@ from configs import ConfigQDH as cfg
 from datasets.qdh import QdhDataset
 from utils.loss_utils import compute_acc, IoUCalculator
 from utils.network_utils import load_network
+from utils import loss_utils
 
 best_loss = np.Inf
 
@@ -49,6 +50,7 @@ def embed():
     # ===================Resume====================
     model, optimizer, start_epoch, scheduler = load_network(
         cfg, args.device, args.checkpoint)
+    torch.backends.cudnn.benchmark = True
 
     # ======================Start==========================
     criterion = nn.CrossEntropyLoss(reduction='none')
@@ -61,6 +63,17 @@ def embed():
                                        collate_fn=train_dataset.collate_fn,
                                        num_workers=cfg.num_workers,
                                        drop_last=False)
+        # indices = np.random.choice(range(len(test_dataset)),
+        #                            len(test_dataset) // 10)
+        test_loader = data.DataLoader(
+            test_dataset,
+            batch_size=cfg.eval_batch_size,
+            # sampler=SubsetRandomSampler(indices),
+            num_workers=cfg.num_workers,
+            collate_fn=test_dataset.collate_fn,
+            shuffle=False,
+            drop_last=False)
+        test_loader_iterator = iter(test_loader)
         start = datetime.datetime.now()
         main_index = 0
         all_loss = 0
@@ -68,7 +81,7 @@ def embed():
         iou_calc = IoUCalculator(cfg)
         if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
             train_loader = tqdm(train_loader, ncols=100)
-        for i, (short_name, inputs) in enumerate(train_loader):
+        for batch_idx, (short_name, inputs) in enumerate(train_loader):
             batch_size = len(short_name)
             for key in inputs:
                 if type(inputs[key]) is list:
@@ -78,12 +91,13 @@ def embed():
                     inputs[key] = inputs[key].cuda()
 
             f_out = model(inputs)
-            logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-            labels = inputs['labels'].reshape(-1)
-            loss = criterion(logits, labels)
-            loss = loss.mean()
-            iou_calc.add_data(logits, labels)
-            acc = compute_acc(logits, labels)
+            # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+            # labels = inputs['labels'].reshape(-1)
+            # loss = criterion(logits, labels)
+            loss, valid_logits, valid_labels = loss_utils.compute_loss(
+                logits=f_out, labels=inputs['labels'], cfg=cfg)
+            acc = compute_acc(valid_logits, valid_labels)
+            iou_calc.add_data(valid_logits, valid_labels)
             main_index += batch_size
             all_loss += loss * batch_size
 
@@ -100,9 +114,40 @@ def embed():
                 main_index)
             tb_writer.add_scalar(
                 'sum_loss', all_loss / main_index,
-                            int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
-                            main_index)
-            epochs.set_description("Epoch (Loss=%g)" % round(loss.item(), 5))
+                int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
+                main_index)
+
+            if batch_idx % 8 == 0:
+                del short_name
+                del inputs
+                optimizer.zero_grad()
+                for test_batch_idx in range(8):
+                    try:
+                        test_batch = next(test_loader_iterator)
+                    except StopIteration:
+                        test_loader_iterator = iter(test_loader)
+                        test_batch = next(test_loader_iterator)
+                    short_name, inputs = test_batch
+                    for key in inputs:
+                        if type(inputs[key]) is list:
+                            for i in range(len(inputs[key])):
+                                inputs[key][i] = inputs[key][i].cuda()
+                        else:
+                            inputs[key] = inputs[key].cuda()
+
+                    f_out = model(inputs)
+                    test_loss, valid_logits, valid_labels = loss_utils.compute_loss(
+                        logits=f_out, labels=inputs['labels'], cfg=cfg)
+
+                    test_loss.backward()
+                    epochs.set_description("Epoch (Loss=%g, TestLoss=%g)" % (
+                        round(loss.item(), 5),
+                        round(test_loss.item(), 5),
+                    ))
+                optimizer.step()
+            else:
+                epochs.set_description("Epoch (Loss=%g)" %
+                                       round(loss.item(), 5))
 
         now = datetime.datetime.now()
         duration = now - start
@@ -136,11 +181,12 @@ def embed():
 
         print(log)
 
-    def eval_one_epoch(i_epoch):
+    def eval_one_epoch(epoch_idx):
         model.eval()
         main_index = 0
         with torch.no_grad():
-            indices = np.random.choice(range(len(test_dataset)), len(test_dataset) // 10)
+            indices = np.random.choice(range(len(test_dataset)),
+                                       len(test_dataset) // 10)
             test_loader = data.DataLoader(test_dataset,
                                           batch_size=cfg.eval_batch_size,
                                           sampler=SubsetRandomSampler(indices),
@@ -166,6 +212,9 @@ def embed():
                 labels = inputs['labels'].reshape(-1)
                 # acc = compute_acc(logits, labels)
                 eval_iou_calc.add_data(logits, labels)
+                # _, valid_logits, valid_labels = loss_utils.compute_loss_simple(
+                #     logits=f_out, labels=inputs['labels'], cfg=cfg)
+                # eval_iou_calc.add_data(valid_logits, valid_labels)
                 # loss = loss1 + loss2
                 main_index += batch_size
 
@@ -179,7 +228,7 @@ def embed():
 
             tb_writer.add_scalar(
                 'eval_miou', eval_mean_iou,
-                int(i_epoch) * len(test_loader) * int(cfg.batch_size))
+                int(epoch_idx) * len(test_loader) * int(cfg.batch_size))
 
             fname = os.path.join(args.logdir, 'eval.log')
             with open(fname, 'a') as fp:
@@ -194,6 +243,7 @@ def embed():
         if i_epoch % 5 == 0:
             eval_one_epoch(i_epoch)
         scheduler.step()
+        epochs.update()
         print('-' * 30)
 
 
