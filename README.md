@@ -1,6 +1,15 @@
 # ros-randla-net
 ROS node for RandLA-Net to achieve point cloud segmentation.
 
+## Environment
+
+- Ubuntu 16.04 (Recommended) / 18.04
+- CUDA 10.0/10.1
+- ROS Kinetic / Melodic
+- Python 2 (running as ROS node) / Python 3 (training)
+
+> Three exists something wrong with `libpcl-dev` (1.8.1) in Ubuntu 18.04 with `python-pcl` (0.3.0a1), which may cause a  `libpcl_keypoints version mismatch` error. Check [this issue](https://github.com/strawlab/python-pcl/issues/296) for a temporary solution before the author update this package.
+
 
 ## Installation
 
@@ -50,8 +59,9 @@ ROS node for RandLA-Net to achieve point cloud segmentation.
 
    ```bash
    # build extensions for this repo
+   # use 'build_deps_py3.sh' if you're using Python 3 for training
    $ cd /path/to/this/repo
-   $ ./script/build_ops.sh
+   $ ./script/build_deps.sh
    # build the whole workspace
    $ cd /path/to/workspace/root
    $ catkin_make

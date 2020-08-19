@@ -34,7 +34,7 @@ def embed():
     args = parser.parse_args()
 
     if not os.path.exists(args.logdir):
-        os.mkdir(args.logdir)
+        os.makedirs(args.logdir)
 
     # ===============Create dataset===================
     train_dataset = QdhDataset(cfg, mode='train')
@@ -90,7 +90,7 @@ def embed():
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
             tb_writer.add_scalar(
-                'logits', loss,
+                'logits', float(loss),
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
             tb_writer.add_scalar(

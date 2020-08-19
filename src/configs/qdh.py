@@ -2,8 +2,8 @@
 
 
 class ConfigQDH:
-    root = '/media/home/Temp/715三脚架检测项目/datasets/data/ROI_scan'  # train data
-    test_root = '/media/home/Temp/715三脚架检测项目/datasets/data/raw_scan'  # test_data
+    root = '/datasets/data/ROI_scan'  # train data
+    test_root = '/datasets/data/raw_scan'  # test_data
     k_n = 16  # KNN
     num_layers = 4  # Number of layers
     num_points = 4096  # Number of input points
@@ -16,8 +16,7 @@ class ConfigQDH:
     # train_steps = 500  # Number of steps per epochs
     # val_steps = 100  # Number of validation steps per epoch
 
-    sub_sampling_ratio = [4, 4, 4,
-                          4]  # sampling ratio of random sampling at each layer
+    sub_sampling_ratio = [4, 4, 4, 4]
     d_out = [16, 64, 128, 256]  # feature dimension
     num_sub_points = [
         num_points // 4, num_points // 16, num_points // 64, num_points // 256

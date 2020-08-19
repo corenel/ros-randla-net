@@ -3,7 +3,7 @@
 # build and install nearest_neighbors
 cd "$(git rev-parse --show-cdup)"|| exit
 cd src/utils/nearest_neighbors \
-  && python setup.py install --home="." \
+  && python3 setup.py install --home="." \
   && touch __init__.py \
   && touch lib/__init__.py \
   && touch lib/python/__init__.py \
