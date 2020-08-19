@@ -12,8 +12,10 @@ class IoUCalculator:
         self.cfg = cfg
 
     def add_data(self, valid_logits, valid_labels):
-        logits = valid_logits.view(-1, self.cfg.num_classes)
-        labels = valid_labels.view(-1, 1)
+        if valid_logits.shape[0] == 0:
+            return
+        logits = valid_logits
+        labels = valid_labels
         pred = logits.max(dim=1)[1]
         pred_valid = pred.detach().cpu().numpy()
         labels_valid = labels.detach().cpu().numpy()
@@ -49,7 +51,10 @@ class IoUCalculator:
         return mean_iou, iou_list
 
 
-def compute_acc(valid_logits, valid_labels):
+def compute_acc(valid_logits, valid_labels, cfg):
+    if valid_logits.shape[0] == 0:
+        return 0.
+
     valid_logits = valid_logits.max(dim=1)[1]
     acc = (valid_logits == valid_labels).sum().float() / float(
         valid_labels.shape[0])
@@ -78,7 +83,7 @@ def compute_loss(logits, labels, cfg):
     valid_labels_init = labels[valid_idx]
 
     # Reduce label values in the range of logit shape
-    reducing_list = torch.range(0, cfg.num_classes).long().cuda()
+    reducing_list = torch.arange(0, cfg.num_classes).long().cuda()
     inserted_value = torch.zeros((1,)).long().cuda()
     for ign_label in cfg.ignored_label_inds:
         reducing_list = torch.cat([
@@ -87,6 +92,7 @@ def compute_loss(logits, labels, cfg):
         ], 0)
     valid_labels = torch.gather(reducing_list, 0, valid_labels_init)
     loss = get_loss(valid_logits, valid_labels, cfg.class_weights)
+
     return loss, valid_logits, valid_labels
 
 

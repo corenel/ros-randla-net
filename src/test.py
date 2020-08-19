@@ -61,7 +61,7 @@ def embed():
             f_out = model(inputs)
             logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
             labels = inputs['labels'].reshape(-1)
-            acc = compute_acc(logits, labels)
+            acc = compute_acc(logits, labels, cfg)
             pred = logits.max(dim=1)[1]
             print(short_name, 'Acc: ', acc)
 

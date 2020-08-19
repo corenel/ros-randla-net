@@ -91,13 +91,13 @@ def embed():
                     inputs[key] = inputs[key].cuda()
 
             f_out = model(inputs)
-            # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-            # labels = inputs['labels'].reshape(-1)
-            # loss = criterion(logits, labels)
-            loss, valid_logits, valid_labels = loss_utils.compute_loss(
-                logits=f_out, labels=inputs['labels'], cfg=cfg)
-            acc = compute_acc(valid_logits, valid_labels)
-            iou_calc.add_data(valid_logits, valid_labels)
+            logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+            labels = inputs['labels'].reshape(-1)
+            loss = criterion(logits, labels).mean()
+            # loss, valid_logits, valid_labels = loss_utils.compute_loss_simple(
+            #     logits=f_out, labels=inputs['labels'], cfg=cfg)
+            iou_calc.add_data(logits, labels)
+            acc = compute_acc(logits, labels, cfg)
             main_index += batch_size
             all_loss += loss * batch_size
 
@@ -105,7 +105,7 @@ def embed():
             loss.backward()
             optimizer.step()
             tb_writer.add_scalar(
-                'acc', acc,
+                'acc', float(acc),
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
             tb_writer.add_scalar(
@@ -136,18 +136,24 @@ def embed():
                             inputs[key] = inputs[key].cuda()
 
                     f_out = model(inputs)
-                    test_loss, valid_logits, valid_labels = loss_utils.compute_loss(
-                        logits=f_out, labels=inputs['labels'], cfg=cfg)
-
+                    # test_loss, valid_logits, valid_labels = loss_utils.compute_loss_simple(
+                    #     logits=f_out, labels=inputs['labels'], cfg=cfg)
+                    logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+                    labels = inputs['labels'].reshape(-1)
+                    test_loss = criterion(logits, labels).mean()
+                    test_acc = compute_acc(logits, labels, cfg)
                     test_loss.backward()
-                    epochs.set_description("Epoch (Loss=%g, TestLoss=%g)" % (
-                        round(loss.item(), 5),
-                        round(test_loss.item(), 5),
-                    ))
+                    epochs.set_description(
+                        "Epoch (Loss=%g,TestLoss=%g,TestAcc=%g)" % (
+                            round(loss.item(), 5),
+                            round(test_loss.item(), 5),
+                            round(test_acc.item(), 5),
+                        ))
                 optimizer.step()
             else:
-                epochs.set_description("Epoch (Loss=%g)" %
-                                       round(loss.item(), 5))
+                epochs.set_description(
+                    "Epoch (Loss=%g,Acc=%g)" %
+                    (round(loss.item(), 5), round(acc.item(), 5)))
 
         now = datetime.datetime.now()
         duration = now - start
@@ -210,15 +216,17 @@ def embed():
                 f_out = model(inputs)
                 logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
                 labels = inputs['labels'].reshape(-1)
-                # acc = compute_acc(logits, labels)
-                eval_iou_calc.add_data(logits, labels)
                 # _, valid_logits, valid_labels = loss_utils.compute_loss_simple(
                 #     logits=f_out, labels=inputs['labels'], cfg=cfg)
-                # eval_iou_calc.add_data(valid_logits, valid_labels)
+                eval_iou_calc.add_data(logits, labels)
+                acc = compute_acc(logits, labels, cfg)
                 # loss = loss1 + loss2
                 main_index += batch_size
+                epochs.set_description("Epoch (Acc=%g)" %
+                                       (round(acc.item(), 5)))
 
-            eval_log = '> | Eval |'
+            eval_log = '> Epoch [{:04d}/{:04d}] | Eval |'.format(
+                epoch_idx, cfg.max_epoch)
             eval_mean_iou, eval_iou_list = eval_iou_calc.compute_iou()
             eval_log += 'mean IoU:{:.1f} |'.format(eval_mean_iou * 100)
             s = 'IoU: '
