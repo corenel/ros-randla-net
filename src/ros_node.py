@@ -6,14 +6,17 @@ import numpy as np
 import rospkg
 import rospy
 import torch
+import torch.utils.data as data
 from sensor_msgs.msg import PointCloud2
 from torch import nn
 
 import ros_helper
-from models.RandLANet import Network
 from configs import ConfigQDH as cfg
+from datasets.qdh_inference import QdhInferenceDataset
+from models.RandLANet import Network
 from utils.data_utils import DataProcessing as DP
 from utils.timer import Timer
+from utils.data_utils import make_cuda
 
 
 class InferenceHelper:
@@ -59,6 +62,11 @@ class InferenceHelper:
         self.frame_id = rospy.get_param('/ros_randla_net/general/frame_id')
         self.timer = Timer(enabled=self.debug)
 
+        self.dataset = QdhInferenceDataset(config=cfg,
+                                           mode='inference',
+                                           pcs=None)
+        self.data_loader = None
+
     def pre_process(self, ros_msg):
         self.timer.restart()
         # convert from ROS PointCloud2 to PCL XYZ
@@ -66,56 +74,75 @@ class InferenceHelper:
         self.timer.log_and_restart('pre-process: ros_to_pcl')
 
         # convert to numpy array
-        batch_pc = np.expand_dims(np.asarray(pcl_xyz), axis=0)
-        self.timer.log_and_restart('pre-process: pcl_to_np')
+        np_xyz = np.asarray(pcl_xyz)
 
-        # tf amp
-        input_points, input_neighbors, input_pools, input_up_samples = [], [], [], []
-        for i in range(cfg.num_layers):
-            neighbour_idx = DP.knn_batch(batch_pc, batch_pc, cfg.k_n)
-            sub_points = batch_pc[:, :batch_pc.shape[1] //
-                                  cfg.sub_sampling_ratio[i], :]
-            pool_i = neighbour_idx[:, :batch_pc.shape[1] //
-                                   cfg.sub_sampling_ratio[i], :]
-            up_i = DP.knn_batch(sub_points, batch_pc, 1)
-            input_points.append(batch_pc)
-            input_neighbors.append(neighbour_idx)
-            input_pools.append(pool_i)
-            input_up_samples.append(up_i)
-            batch_pc = sub_points
-        self.timer.log_and_restart('pre-process: tf_map')
+        # # down-sampling
+        # pick_idx = np.random.choice(len(np_xyz), 1)
+        # selected_idx = QdhDataset.crop_pc(np_xyz, pick_idx)
+        # selected_pc = np_xyz[selected_idx, :]
+        #
+        # # generate fake batch
+        # batch_pc = np.expand_dims(selected_pc, axis=0)
+        # self.timer.log_and_restart('pre-process: pcl_to_np')
+        #
+        # # tf amp
+        # input_points, input_neighbors, input_pools, input_up_samples = [], [], [], []
+        # for i in range(cfg.num_layers):
+        #     neighbour_idx = DP.knn_batch(batch_pc, batch_pc, cfg.k_n)
+        #     sub_points = batch_pc[:, :batch_pc.shape[1] //
+        #                           cfg.sub_sampling_ratio[i], :]
+        #     pool_i = neighbour_idx[:, :batch_pc.shape[1] //
+        #                            cfg.sub_sampling_ratio[i], :]
+        #     up_i = DP.knn_batch(sub_points, batch_pc, 1)
+        #     input_points.append(batch_pc)
+        #     input_neighbors.append(neighbour_idx)
+        #     input_pools.append(pool_i)
+        #     input_up_samples.append(up_i)
+        #     batch_pc = sub_points
+        # self.timer.log_and_restart('pre-process: tf_map')
+        #
+        # # collate
+        # inputs = {'xyz': [], 'neigh_idx': [], 'sub_idx': [], 'interp_idx': []}
+        # for tmp in input_points:
+        #     inputs['xyz'].append(torch.from_numpy(tmp).float())
+        # for tmp in input_neighbors:
+        #     inputs['neigh_idx'].append(torch.from_numpy(tmp).long())
+        # for tmp in input_pools:
+        #     inputs['sub_idx'].append(torch.from_numpy(tmp).long())
+        # for tmp in input_up_samples:
+        #     inputs['interp_idx'].append(torch.from_numpy(tmp).long())
+        # self.timer.log_and_restart('pre-process: collate')
 
-        # collate
-        inputs = {'xyz': [], 'neigh_idx': [], 'sub_idx': [], 'interp_idx': []}
-        for tmp in input_points:
-            inputs['xyz'].append(torch.from_numpy(tmp).float())
-        for tmp in input_neighbors:
-            inputs['neigh_idx'].append(torch.from_numpy(tmp).long())
-        for tmp in input_pools:
-            inputs['sub_idx'].append(torch.from_numpy(tmp).long())
-        for tmp in input_up_samples:
-            inputs['interp_idx'].append(torch.from_numpy(tmp).long())
-        self.timer.log_and_restart('pre-process: collate')
+        # tensor dataset
+        self.dataset.set_pcs(np_xyz)
 
-        return inputs, pcl_xyz
+        self.data_loader = data.DataLoader(self.dataset,
+                                           batch_size=cfg.inference_batch_size,
+                                           shuffle=True,
+                                           collate_fn=self.dataset.collate_fn,
+                                           num_workers=cfg.num_workers,
+                                           drop_last=False)
+        batch_data = next(iter(self.data_loader))
+        inputs, selected_indices = batch_data
+
+        return pcl_xyz, inputs, selected_indices
 
     def inference(self, batch_data):
         with torch.no_grad():
             if self.device.type != 'cpu':
-                for key in batch_data:
-                    if type(batch_data[key]) is list:
-                        for i in range(len(batch_data[key])):
-                            batch_data[key][i] = batch_data[key][i].cuda()
-                    else:
-                        batch_data[key] = batch_data[key].cuda()
+                batch_data = make_cuda(batch_data)
             preds = self.net(batch_data)
         return preds
 
-    def post_process(self, ros_msg, pcl_xyz, preds):
+    def post_process(self, ros_msg, pcl_xyz, selected_indices, preds):
         logits = preds
         logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
         logits = logits.max(dim=1)[1].cpu().numpy()
-        colors = [self.label_to_colors[int(label)] for label in logits]
+        colors = [self.label_to_colors[0] for _ in range(pcl_xyz.size)]
+        for selected_idx in selected_indices:
+            for idx, sel_idx in enumerate(selected_idx):
+                colors[sel_idx] = self.label_to_colors[logits[idx]]
+        # colors = [self.label_to_colors[int(label)] for label in logits]
         pcl_xyzrgb = ros_helper.XYZ_to_XYZRGB(pcl_xyz,
                                               color=colors,
                                               use_multiple_colors=True)
@@ -126,10 +153,10 @@ class InferenceHelper:
 
     def process(self, ros_msg):
         self.timer.restart()
-        inputs, pcl_xyz = self.pre_process(ros_msg)
+        pcl_xyz, inputs, selected_indices = self.pre_process(ros_msg)
         preds = self.inference(inputs)
         self.timer.log_and_restart('inference')
-        out_msg = self.post_process(ros_msg, pcl_xyz, preds)
+        out_msg = self.post_process(ros_msg, pcl_xyz, selected_indices, preds)
         self.timer.log_and_restart('post-process')
         self.timer.print_log()
         return out_msg
@@ -153,10 +180,10 @@ class InferenceNode:
         self.pcl_sub = rospy.Subscriber(topic_pcl_sub,
                                         PointCloud2,
                                         self.callback,
-                                        queue_size=3)
+                                        queue_size=1)
         self.pcl_pub = rospy.Publisher(topic_pcl_pub,
                                        PointCloud2,
-                                       queue_size=3)
+                                       queue_size=1)
 
     def callback(self, ros_msg):
         out_msg = self.helper.process(ros_msg)

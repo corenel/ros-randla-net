@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from utils.data_utils import DataProcessing as DP
+import numpy as np
 
 
 class ConfigQDH:
@@ -10,10 +10,12 @@ class ConfigQDH:
     num_layers = 4  # Number of layers
     num_points = 4096  # Number of input points
     num_classes = 2  # Number of valid classes
+    label_to_names = {0: 'background', 1: 'tripod', 2: 'element'}
     sub_grid_size = 0.06  # preprocess_parameter
 
     batch_size = 32  # batch_size during training
     eval_batch_size = 1  # batch_size during training
+    inference_batch_size = 4
     num_workers = 16
     # val_batch_size = 20  # batch_size during validation and test
     # train_steps = 500  # Number of steps per epochs
@@ -41,6 +43,15 @@ class ConfigQDH:
     saving_path = None
     train = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]
     valid = [8]
+
+    # use data aug on point cloud
+    use_data_augmentation = True
+    rotation_jitter = np.pi / 12
+    position_jitter = 0.1
+    displacement = 1.0
+
+    # use normalization on point cloud
+    no_norm = True
 
     def __init__(self):
         pass

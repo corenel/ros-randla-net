@@ -16,6 +16,7 @@ from configs import ConfigQDH as cfg
 from datasets.qdh import QdhDataset
 from utils.loss_utils import compute_acc, IoUCalculator
 from utils.network_utils import load_network
+from utils.data_utils import make_cuda
 from utils import loss_utils
 
 best_loss = np.Inf
@@ -66,8 +67,8 @@ def embed():
         # indices = np.random.choice(range(len(test_dataset)),
         #                            len(test_dataset) // 10)
         test_loader = data.DataLoader(
-            test_dataset,
-            batch_size=cfg.eval_batch_size,
+            QdhDataset(cfg, mode='train'),
+            batch_size=cfg.batch_size,
             # sampler=SubsetRandomSampler(indices),
             num_workers=cfg.num_workers,
             collate_fn=test_dataset.collate_fn,
@@ -83,13 +84,7 @@ def embed():
             train_loader = tqdm(train_loader, ncols=100)
         for batch_idx, (short_name, inputs) in enumerate(train_loader):
             batch_size = len(short_name)
-            for key in inputs:
-                if type(inputs[key]) is list:
-                    for i in range(len(inputs[key])):
-                        inputs[key][i] = inputs[key][i].cuda()
-                else:
-                    inputs[key] = inputs[key].cuda()
-
+            inputs = make_cuda(inputs)
             f_out = model(inputs)
             logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
             labels = inputs['labels'].reshape(-1)
@@ -117,7 +112,7 @@ def embed():
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
 
-            if batch_idx % 8 == 0:
+            if batch_idx % 8 == 0 and False:
                 del short_name
                 del inputs
                 optimizer.zero_grad()
@@ -128,13 +123,7 @@ def embed():
                         test_loader_iterator = iter(test_loader)
                         test_batch = next(test_loader_iterator)
                     short_name, inputs = test_batch
-                    for key in inputs:
-                        if type(inputs[key]) is list:
-                            for i in range(len(inputs[key])):
-                                inputs[key][i] = inputs[key][i].cuda()
-                        else:
-                            inputs[key] = inputs[key].cuda()
-
+                    inputs = make_cuda(inputs)
                     f_out = model(inputs)
                     # test_loss, valid_logits, valid_labels = loss_utils.compute_loss_simple(
                     #     logits=f_out, labels=inputs['labels'], cfg=cfg)
@@ -191,28 +180,20 @@ def embed():
         model.eval()
         main_index = 0
         with torch.no_grad():
-            indices = np.random.choice(range(len(test_dataset)),
-                                       len(test_dataset) // 10)
-            test_loader = data.DataLoader(test_dataset,
-                                          batch_size=cfg.eval_batch_size,
-                                          sampler=SubsetRandomSampler(indices),
-                                          num_workers=cfg.num_workers,
-                                          collate_fn=test_dataset.collate_fn,
-                                          shuffle=False,
-                                          drop_last=False)
-            eval_scalars = defaultdict(list)
+            test_loader = data.DataLoader(
+                test_dataset,
+                batch_size=cfg.eval_batch_size,
+                num_workers=cfg.num_workers,
+                collate_fn=test_dataset.collate_fn,
+                shuffle=False,
+                drop_last=False)
+            # eval_scalars = defaultdict(list)
             eval_iou_calc = IoUCalculator(cfg)
             if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
                 test_loader = tqdm(test_loader, ncols=100)
             for i, (short_name, inputs) in enumerate(test_loader):
                 batch_size = len(short_name)
-                for key in inputs:
-                    if type(inputs[key]) is list:
-                        for i in range(len(inputs[key])):
-                            inputs[key][i] = inputs[key][i].cuda()
-                    else:
-                        inputs[key] = inputs[key].cuda()
-
+                inputs = make_cuda(inputs)
                 f_out = model(inputs)
                 logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
                 labels = inputs['labels'].reshape(-1)
