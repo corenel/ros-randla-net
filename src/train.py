@@ -46,6 +46,20 @@ def embed():
     print('#train: {}'.format(len(train_dataset)))
     print('#eval: {}'.format(len(test_dataset)))
 
+    # num_pcs = []
+    # num_labels = defaultdict(int)
+    # for idx in tqdm(range(len(test_dataset))):
+    #     _, pc, labels, _, _ = test_dataset[idx]
+    #     num_pcs.append(pc.shape[0])
+    #     for label in labels:
+    #         num_labels[int(label)] += 1
+    # # max=32230 min=5918 avg=14724
+    # print('#points: max({}), min({}), avg({})'.format(np.max(num_pcs),
+    #                                                   np.min(num_pcs),
+    #                                                   np.average(num_pcs)))
+    # print('#labels: {}'.format(num_labels))
+    # return
+
     tb_writer = SummaryWriter(logdir=os.path.join(args.logdir))
 
     # ===================Resume====================
@@ -67,8 +81,8 @@ def embed():
         # indices = np.random.choice(range(len(test_dataset)),
         #                            len(test_dataset) // 10)
         test_loader = data.DataLoader(
-            QdhDataset(cfg, mode='train'),
-            batch_size=cfg.batch_size,
+            test_dataset,
+            batch_size=cfg.eval_batch_size,
             # sampler=SubsetRandomSampler(indices),
             num_workers=cfg.num_workers,
             collate_fn=test_dataset.collate_fn,
@@ -86,11 +100,11 @@ def embed():
             batch_size = len(short_name)
             inputs = make_cuda(inputs)
             f_out = model(inputs)
-            logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-            labels = inputs['labels'].reshape(-1)
-            loss = criterion(logits, labels).mean()
-            # loss, valid_logits, valid_labels = loss_utils.compute_loss_simple(
-            #     logits=f_out, labels=inputs['labels'], cfg=cfg)
+            # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+            # labels = inputs['labels'].reshape(-1)
+            # loss = criterion(logits, labels).mean()
+            loss, logits, labels = loss_utils.compute_loss_simple(
+                logits=f_out, labels=inputs['labels'], cfg=cfg)
             iou_calc.add_data(logits, labels)
             acc = compute_acc(logits, labels, cfg)
             main_index += batch_size
@@ -112,7 +126,7 @@ def embed():
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
 
-            if batch_idx % 8 == 0:
+            if batch_idx % 8 == 0 and cfg.use_full_set_pc_in_training:
                 del short_name
                 del inputs
                 optimizer.zero_grad()
@@ -125,11 +139,11 @@ def embed():
                     short_name, inputs = test_batch
                     inputs = make_cuda(inputs)
                     f_out = model(inputs)
-                    # test_loss, valid_logits, valid_labels = loss_utils.compute_loss_simple(
-                    #     logits=f_out, labels=inputs['labels'], cfg=cfg)
-                    logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-                    labels = inputs['labels'].reshape(-1)
-                    test_loss = criterion(logits, labels).mean()
+                    test_loss, logits, labels = loss_utils.compute_loss_simple(
+                        logits=f_out, labels=inputs['labels'], cfg=cfg)
+                    # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+                    # labels = inputs['labels'].reshape(-1)
+                    # test_loss = criterion(logits, labels).mean()
                     test_acc = compute_acc(logits, labels, cfg)
                     test_loss.backward()
                     epochs.set_description(

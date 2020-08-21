@@ -222,7 +222,7 @@ class DataProcessing:
             ])
         elif dataset_name is 'qdh':
             # TODO check actual number
-            num_per_class = np.array([1, 1], dtype=np.int32)
+            num_per_class = np.array([78776979, 15241283, 23334316], dtype=np.int32)
         weight = num_per_class / float(sum(num_per_class))
         ce_label_weight = 1 / (weight + 0.02)
         return np.expand_dims(ce_label_weight, axis=0)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from utils.data_utils import DataProcessing as DP
 
 
 class ConfigQDH:
@@ -30,6 +31,7 @@ class ConfigQDH:
 
     noise_init = 3.5  # noise initial parameter
     max_epoch = 100  # maximum epoch during training
+    use_full_set_pc_in_training = True
     learning_rate = 1e-2  # initial learning rate
     # lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate
     step_size = 1
@@ -53,6 +55,8 @@ class ConfigQDH:
 
     # use normalization on point cloud
     no_norm = True
+
+    class_weights = DP.get_class_weights('qdh')
 
     def __init__(self):
         pass
