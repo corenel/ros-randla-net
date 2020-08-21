@@ -9,7 +9,7 @@ class ConfigQDH:
     k_n = 16  # KNN
     num_layers = 4  # Number of layers
     num_points = 4096  # Number of input points
-    num_classes = 2  # Number of valid classes
+    num_classes = 3  # Number of valid classes
     label_to_names = {0: 'background', 1: 'tripod', 2: 'element'}
     sub_grid_size = 0.06  # preprocess_parameter
 

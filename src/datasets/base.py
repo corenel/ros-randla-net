@@ -36,7 +36,7 @@ class BaseDataset(data.Dataset):
             dist = np.max(np.sqrt(np.sum(pc**2, axis=1)), 0)
             pc = pc / dist  # scale
         else:
-            center = np.zeros(1, 3)
+            center = np.zeros((1, 3))
             dist = 1.0
         return pc, center, dist
 
