@@ -15,7 +15,8 @@ class ConfigQDH:
 
     batch_size = 32  # batch_size during training
     eval_batch_size = 1  # batch_size during training
-    inference_batch_size = 4
+    inference_batch_size = 1
+    crop_pc_on_inference = False
     num_workers = 16
     # val_batch_size = 20  # batch_size during validation and test
     # train_steps = 500  # Number of steps per epochs
@@ -47,7 +48,7 @@ class ConfigQDH:
     # use data aug on point cloud
     use_data_augmentation = True
     rotation_jitter = np.pi / 12
-    position_jitter = 0.1
+    position_jitter = 0.10
     displacement = 1.0
 
     # use normalization on point cloud

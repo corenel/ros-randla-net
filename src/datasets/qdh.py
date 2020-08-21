@@ -59,10 +59,10 @@ class QdhDataset(BaseDataset):
             masks[np.arange(selected_labels.shape[0]), selected_labels[:,
                                                                        0]] = 1
 
-        # do normalization
-        # selected_pc, center, dist = self.normalize(selected_pc)
         # do data augmentation
         selected_pc = self.data_aug(selected_pc)
+        # do normalization
+        selected_pc, center, dist = self.normalize(selected_pc)
 
         return short_name, selected_pc, selected_labels, selected_idx, masks
 

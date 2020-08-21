@@ -141,7 +141,8 @@ class InferenceHelper:
         colors = [self.label_to_colors[0] for _ in range(pcl_xyz.size)]
         for selected_idx in selected_indices:
             for idx, sel_idx in enumerate(selected_idx):
-                colors[sel_idx] = self.label_to_colors[logits[idx]]
+                if logits[idx] != 0:
+                    colors[sel_idx] = self.label_to_colors[logits[idx]]
         # colors = [self.label_to_colors[int(label)] for label in logits]
         pcl_xyzrgb = ros_helper.XYZ_to_XYZRGB(pcl_xyz,
                                               color=colors,

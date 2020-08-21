@@ -112,7 +112,7 @@ def embed():
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
 
-            if batch_idx % 8 == 0 and False:
+            if batch_idx % 8 == 0:
                 del short_name
                 del inputs
                 optimizer.zero_grad()
@@ -180,13 +180,12 @@ def embed():
         model.eval()
         main_index = 0
         with torch.no_grad():
-            test_loader = data.DataLoader(
-                test_dataset,
-                batch_size=cfg.eval_batch_size,
-                num_workers=cfg.num_workers,
-                collate_fn=test_dataset.collate_fn,
-                shuffle=False,
-                drop_last=False)
+            test_loader = data.DataLoader(test_dataset,
+                                          batch_size=cfg.eval_batch_size,
+                                          num_workers=cfg.num_workers,
+                                          collate_fn=test_dataset.collate_fn,
+                                          shuffle=False,
+                                          drop_last=False)
             # eval_scalars = defaultdict(list)
             eval_iou_calc = IoUCalculator(cfg)
             if logging.getLogger().getEffectiveLevel() > logging.DEBUG:

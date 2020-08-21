@@ -21,9 +21,14 @@ class QdhInferenceDataset(BaseDataset):
         self.pcs = pcs
 
     def spatially_regular_gen(self, index):
-        pick_idx = np.random.choice(len(self.pcs), 1)
-        selected_idx = self.crop_pc(self.pcs, pick_idx)
+        if self.cfg.crop_pc_on_inference:
+            pick_idx = np.random.choice(len(self.pcs), 1)
+            selected_idx = self.crop_pc(self.pcs, pick_idx)
+        else:
+            selected_idx = np.arange(len(self.pcs))
         selected_pc = self.pcs[selected_idx, :]
+        # do normalization
+        selected_pc, center, dist = self.normalize(selected_pc)
         return selected_pc, selected_idx
 
     def collate_fn(self, batch):
