@@ -3,6 +3,7 @@ import os
 import torch.optim as optim
 
 from models.RandLANet import Network
+from utils.optim import Lookahead
 
 
 def load_network(config, device, resume_path=None):
@@ -14,6 +15,9 @@ def load_network(config, device, resume_path=None):
         start_epoch = 0
         parameters = model.parameters()
         optimizer = optim.Adam(parameters, lr=config.learning_rate)
+        if hasattr(config, 'optimizer') and config.optimizer == 'lookahead':
+            print('Use optimizer: {}'.format(config.optimizer))
+            optimizer = Lookahead(optimizer=optimizer, k=5, alpha=0.5)
 
     scheduler = optim.lr_scheduler.StepLR(optimizer,
                                           config.step_size,

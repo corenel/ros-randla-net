@@ -126,7 +126,9 @@ def embed():
                 int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
                 main_index)
 
-            if batch_idx % 8 == 0 and cfg.use_full_set_pc_in_training:
+            if epoch_idx >= cfg.max_epoch // 4 and \
+                    batch_idx % 8 == 0 and \
+                    cfg.use_full_set_pc_in_training:
                 del short_name
                 del inputs
                 optimizer.zero_grad()

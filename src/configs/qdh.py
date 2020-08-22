@@ -14,7 +14,7 @@ class ConfigQDH:
     label_to_names = {0: 'background', 1: 'tripod', 2: 'element'}
     sub_grid_size = 0.06  # preprocess_parameter
 
-    batch_size = 32  # batch_size during training
+    batch_size = 48  # batch_size during training
     eval_batch_size = 1  # batch_size during training
     inference_batch_size = 1
     crop_pc_on_inference = False
@@ -30,8 +30,9 @@ class ConfigQDH:
     ]
 
     noise_init = 3.5  # noise initial parameter
-    max_epoch = 100  # maximum epoch during training
+    max_epoch = 200  # maximum epoch during training
     use_full_set_pc_in_training = True
+    optimizer = 'lookahead'
     learning_rate = 1e-2  # initial learning rate
     # lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate
     step_size = 1
