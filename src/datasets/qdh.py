@@ -10,13 +10,19 @@ class QdhDataset(BaseDataset):
         super(QdhDataset, self).__init__(config, mode)
         self.name = 'qdh'
 
-        train_list, val_list, test_list = DP.get_file_list(config)
+        train_list, val_list, test_list, invalid_file_list = DP.get_file_list(
+            config)
         if mode == 'train':
             self.data_list = train_list
         # elif mode == 'eval':
         #     self.data_list = val_list
         elif mode == 'test':
             self.data_list = test_list
+
+        self.data_list = [
+            fname for fname in self.data_list
+            if fname.split('/')[-1] not in invalid_file_list
+        ]
 
         # self.data_list = self.data_list[0]
         # self.data_list = DP.shuffle_list(self.data_list)
@@ -59,6 +65,7 @@ class QdhDataset(BaseDataset):
             masks[np.arange(selected_labels.shape[0]), selected_labels[:,
                                                                        0]] = 1
 
+        # FIXME should aug after norm?
         # do data augmentation
         selected_pc = self.data_aug(selected_pc)
         # do normalization

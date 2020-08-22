@@ -13,17 +13,21 @@ class BaseDataset(data.Dataset):
 
     def data_aug(self, pc):
         if self.cfg.use_data_augmentation:
-            theta = self.cfg.rotation_jitter
-            rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
-                                        [np.sin(theta),
-                                         np.cos(theta)]])
-            position_offsets = np.random.normal(0,
-                                                self.cfg.position_jitter,
-                                                size=pc.shape)
+            theta = np.random.uniform(0, self.cfg.rotation_jitter)
+            # rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
+            #                             [np.sin(theta),
+            #                              np.cos(theta)]])
+            cosval = np.cos(theta)
+            sinval = np.sin(theta)
+            rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0],
+                                        [-sinval, 0, cosval]])
+            position_offsets = np.clip(
+                self.cfg.position_jitter * np.random.randn(*pc.shape),
+                -1 * self.cfg.position_clip, self.cfg.position_clip)
             displacement = np.random.normal(0,
                                             self.cfg.displacement,
                                             size=(1, 3))
-            pc[:, [0, 2]] = pc[:, [0, 2]].dot(rotation_matrix)
+            pc = pc.dot(rotation_matrix)
             pc += position_offsets
             pc += displacement
 

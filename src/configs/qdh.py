@@ -9,12 +9,12 @@ class ConfigQDH:
     test_root = '/datasets/data/ROI_scan'  # test_data
     k_n = 16  # KNN
     num_layers = 4  # Number of layers
-    num_points = 4096  # Number of input points
+    num_points = 4096 * 2  # Number of input points
     num_classes = 3  # Number of valid classes
     label_to_names = {0: 'background', 1: 'tripod', 2: 'element'}
     sub_grid_size = 0.06  # preprocess_parameter
 
-    batch_size = 48  # batch_size during training
+    batch_size = 32  # batch_size during training
     eval_batch_size = 1  # batch_size during training
     inference_batch_size = 1
     crop_pc_on_inference = False
@@ -50,12 +50,13 @@ class ConfigQDH:
 
     # use data aug on point cloud
     use_data_augmentation = True
-    rotation_jitter = np.pi / 12
-    position_jitter = 0.10
+    rotation_jitter = np.pi * 2
+    position_jitter = 0.01
+    position_clip = 0.05
     displacement = 1.0
 
     # use normalization on point cloud
-    no_norm = True
+    no_norm = False
 
     class_weights = DP.get_class_weights('qdh')
 

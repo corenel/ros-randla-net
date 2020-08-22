@@ -73,10 +73,16 @@ class DataProcessing:
         test_file_list = sorted(glob.glob(os.path.join(cfg.test_root,
                                                        '*.pcd')))
 
+        if os.path.exists(os.path.join(cfg.root, 'invalid_files.txt')):
+            with open(os.path.join(cfg.root, 'invalid_files.txt')) as f:
+                invalid_file_list = [line.strip() for line in f.readlines()]
+        else:
+            invalid_file_list = []
+
         # train_file_list = train_file_list[:22]
         # val_file_list = val_file_list[:22]
 
-        return train_file_list, val_file_list, test_file_list
+        return train_file_list, val_file_list, test_file_list, invalid_file_list
 
     @staticmethod
     def knn_search(support_pts, query_pts, k):
@@ -222,7 +228,8 @@ class DataProcessing:
             ])
         elif dataset_name is 'qdh':
             # TODO check actual number
-            num_per_class = np.array([78776979, 15241283, 23334316], dtype=np.int32)
+            num_per_class = np.array([78776979, 15241283, 23334316],
+                                     dtype=np.int32)
         weight = num_per_class / float(sum(num_per_class))
         ce_label_weight = 1 / (weight + 0.02)
         return np.expand_dims(ce_label_weight, axis=0)

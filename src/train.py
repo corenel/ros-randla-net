@@ -48,9 +48,12 @@ def embed():
 
     # num_pcs = []
     # num_labels = defaultdict(int)
+    # invalid_files = []
     # for idx in tqdm(range(len(test_dataset))):
-    #     _, pc, labels, _, _ = test_dataset[idx]
+    #     short_name, pc, labels, _, _ = test_dataset[idx]
     #     num_pcs.append(pc.shape[0])
+    #     if pc.shape[0] < cfg.num_points:
+    #         invalid_files.append(short_name)
     #     for label in labels:
     #         num_labels[int(label)] += 1
     # # max=32230 min=5918 avg=14724
@@ -58,6 +61,9 @@ def embed():
     #                                                   np.min(num_pcs),
     #                                                   np.average(num_pcs)))
     # print('#labels: {}'.format(num_labels))
+    # print('#invalid: {}'.format(len(invalid_files)))
+    # with open(os.path.join(cfg.root, 'invalid_files.txt'), 'w') as f:
+    #     f.writelines(invalid_files)
     # return
 
     tb_writer = SummaryWriter(logdir=os.path.join(args.logdir))
@@ -77,6 +83,7 @@ def embed():
                                        shuffle=True,
                                        collate_fn=train_dataset.collate_fn,
                                        num_workers=cfg.num_workers,
+                                       pin_memory=True,
                                        drop_last=False)
         # indices = np.random.choice(range(len(test_dataset)),
         #                            len(test_dataset) // 10)
@@ -86,6 +93,7 @@ def embed():
             # sampler=SubsetRandomSampler(indices),
             num_workers=cfg.num_workers,
             collate_fn=test_dataset.collate_fn,
+            pin_memory=True,
             shuffle=False,
             drop_last=False)
         test_loader_iterator = iter(test_loader)
@@ -123,8 +131,8 @@ def embed():
                 main_index)
             tb_writer.add_scalar(
                 'sum_loss', all_loss / main_index,
-                int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
-                main_index)
+                            int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
+                            main_index)
 
             if epoch_idx >= cfg.max_epoch // 4 and \
                     batch_idx % 8 == 0 and \
@@ -200,6 +208,7 @@ def embed():
                                           batch_size=cfg.eval_batch_size,
                                           num_workers=cfg.num_workers,
                                           collate_fn=test_dataset.collate_fn,
+                                          pin_memory=True,
                                           shuffle=False,
                                           drop_last=False)
             # eval_scalars = defaultdict(list)
