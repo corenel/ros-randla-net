@@ -1,9 +1,14 @@
+import ctypes
 import glob
 import os
+import struct
 import sys
+from random import randint
 
 import numpy as np
+import open3d
 import pandas as pd
+import pcl
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -243,3 +248,159 @@ def make_cuda(batch_data):
         else:
             batch_data[key] = batch_data[key].cuda()
     return batch_data
+
+
+def visualize(xyz, pred, short_name):
+    color = [[245 / 255, 150 / 255, 100 / 255],
+             [90 / 255, 30 / 255, 150 / 255], [80 / 255, 240 / 255, 150 / 255]]
+    xyz = xyz.squeeze().cpu().detach().numpy()
+    pred = pred.cpu().detach().numpy()
+
+    pred_label_set = list(set(pred))
+    pred_label_set.sort()
+    print(pred_label_set)
+    viz_point = open3d.geometry.PointCloud()
+    point_cloud = open3d.geometry.PointCloud()
+    for id_i, label_i in enumerate(pred_label_set):
+        index = np.argwhere(pred == label_i).reshape(-1)
+        sem_cluster = xyz[index, :]
+        point_cloud.points = open3d.utility.Vector3dVector(sem_cluster)
+        point_cloud.paint_uniform_color(color[id_i])
+        viz_point += point_cloud
+
+    # open3d.visualization.draw_geometries([viz_point],
+    #                                      window_name=short_name[0],
+    #                                      width=1920,
+    #                                      height=1080,
+    #                                      left=50,
+    #                                      top=50)
+
+    vis = open3d.visualization.Visualizer()
+    vis.create_window()
+    vis.add_geometry(viz_point)
+    vis.update_geometry(viz_point)
+    vis.poll_events()
+    vis.update_renderer()
+    vis.capture_screen_image(
+        os.path.join('results', os.path.basename(short_name)))
+    vis.destroy_window()
+
+
+def random_color_gen():
+    """
+    Generates a random color
+
+    :return: 3 elements, R, G, and B
+    :rtype: list
+    """
+    r = randint(0, 255)
+    g = randint(0, 255)
+    b = randint(0, 255)
+    return [r, g, b]
+
+
+def XYZRGB_to_XYZ(XYZRGB_cloud):
+    """
+    Converts a PCL XYZRGB point cloud to an XYZ point cloud (removes color info)
+
+    :param XYZRGB_cloud: A PCL XYZRGB point cloud
+    :type XYZRGB_cloud: PointCloud_PointXYZRGB
+    :return: A PCL XYZ point cloud
+    :rtype: PointCloud_PointXYZ
+    """
+    XYZ_cloud = pcl.PointCloud()
+    points_list = []
+
+    for data in XYZRGB_cloud:
+        points_list.append([data[0], data[1], data[2]])
+
+    XYZ_cloud.from_list(points_list)
+    return XYZ_cloud
+
+
+def XYZ_to_XYZRGB(XYZ_cloud, color, use_multiple_colors=False):
+    """
+    Converts a PCL XYZ point cloud to a PCL XYZRGB point cloud
+
+    All returned points in the XYZRGB cloud will be the color indicated
+    by the color parameter.
+
+    :param XYZ_cloud: A PCL XYZ point cloud
+    :type XYZ_cloud: PointCloud_XYZ
+    :param color: 3-element list of integers [0-255,0-255,0-255]
+    :type color: list
+    :param use_multiple_colors: use more than one color
+    :type use_multiple_colors: bool
+    :return: A PCL XYZRGB point cloud
+    :rtype: PointCloud_PointXYZRGB
+    """
+    XYZRGB_cloud = pcl.PointCloud_PointXYZRGB()
+    points_list = []
+
+    float_rgb = rgb_to_float(color) if not use_multiple_colors else None
+
+    for idx, data in enumerate(XYZ_cloud):
+        float_rgb = rgb_to_float(
+            color[idx]) if use_multiple_colors else float_rgb
+        points_list.append([data[0], data[1], data[2], float_rgb])
+
+    XYZRGB_cloud.from_list(points_list)
+    return XYZRGB_cloud
+
+
+def XYZ_to_XYZI(XYZ_cloud, color, use_multiple_colors=False):
+    XYZI_cloud = pcl.PointCloud_PointXYZI()
+    points_list = []
+
+    for idx, data in enumerate(XYZ_cloud):
+        intensity = int(color[idx]) if use_multiple_colors else int(color)
+        points_list.append([data[0], data[1], data[2], intensity])
+
+    XYZI_cloud.from_list(points_list)
+    return XYZI_cloud
+
+
+def rgb_to_float(color):
+    """
+    Converts an RGB list to the packed float format used by PCL
+
+    From the PCL docs:
+    "Due to historical reasons (PCL was first developed as a ROS package),
+     the RGB information is packed into an integer and casted to a float"
+
+    :param color: 3-element list of integers [0-255,0-255,0-255]
+    :type color: list
+    :return: RGB value packed as a float
+    :rtype: float
+    """
+    hex_r = (0xff & color[0]) << 16
+    hex_g = (0xff & color[1]) << 8
+    hex_b = (0xff & color[2])
+
+    hex_rgb = hex_r | hex_g | hex_b
+
+    float_rgb = struct.unpack('f', struct.pack('i', hex_rgb))[0]
+
+    return float_rgb
+
+
+def float_to_rgb(float_rgb):
+    """
+    Converts a packed float RGB format to an RGB list
+
+    :param float_rgb: RGB value packed as a float
+    :type float_rgb: float
+    :return: 3-element list of integers [0-255,0-255,0-255]
+    :rtype: list
+    """
+    s = struct.pack('>f', float_rgb)
+    i = struct.unpack('>l', s)[0]
+    pack = ctypes.c_uint32(i).value
+
+    r = (pack & 0x00FF0000) >> 16
+    g = (pack & 0x0000FF00) >> 8
+    b = (pack & 0x000000FF)
+
+    color = [r, g, b]
+
+    return color

@@ -1,33 +1,43 @@
 import argparse
-import logging
+import os
 
 import numpy as np
-import open3d
+import pcl
+import torch
 import torch.utils.data as data
-from tqdm import tqdm
 
 from configs import ConfigQDH as cfg
-from datasets.qdh import QdhDataset
-from models.RandLANet import *
-from utils.loss_utils import compute_acc, IoUCalculator
+from datasets.qdh_inference import QdhInferenceDataset
+from utils.data_utils import make_cuda, XYZ_to_XYZRGB, XYZRGB_to_XYZ
 from utils.network_utils import load_network
 
-best_loss = np.Inf
+label_to_names = {0: 'unlabeled', 1: 'tripod', 2: 'element'}
+label_to_colors = {0: (255, 255, 255), 1: (255, 0, 0), 2: (0, 255, 0)}
 
 
 def embed():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--logdir',
-                        type=str,
-                        default='logs/qdh_roi',
-                        help='path to the logging directory')
     parser.add_argument('--checkpoint',
                         type=str,
+                        required=True,
                         help='path to checkpoint file')
+    parser.add_argument('--input',
+                        type=str,
+                        required=True,
+                        help='path to input PCD file')
+    parser.add_argument('--output', type=str, help='path to output file')
+    parser.add_argument('--device',
+                        type=str,
+                        default='cuda',
+                        help='trainng device')
     args = parser.parse_args()
 
     # ===============Create dataset===================
-    test_dataset = QdhDataset(cfg, mode='test')
+
+    pcs = pcl.load_XYZI(args.input)
+    pcs_xyz = XYZRGB_to_XYZ(pcs)
+    pcs_np = np.asarray(pcs_xyz)
+    test_dataset = QdhInferenceDataset(cfg, mode='inference', pcs=pcs_np)
 
     # ===================Resume====================
     model, optimizer, start_epoch, scheduler = load_network(
@@ -35,64 +45,36 @@ def embed():
     model.eval()
 
     # ======================Start==========================
-    criterion = nn.CrossEntropyLoss(reduction='none')
-
-    eval_loss = 0
-    main_index = 0
     with torch.no_grad():
         test_loader = data.DataLoader(test_dataset,
                                       batch_size=1,
-                                      num_workers=cfg.num_workers,
+                                      num_workers=1,
                                       collate_fn=test_dataset.collate_fn,
                                       shuffle=False,
                                       drop_last=False)
-        eval_iou_calc = IoUCalculator(cfg)
-        if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
-            test_loader = tqdm(test_loader, ncols=100)
-        for i, (short_name, inputs) in enumerate(test_loader):
-            batch_size = len(short_name)
-            for key in inputs:
-                if type(inputs[key]) is list:
-                    for i in range(len(inputs[key])):
-                        inputs[key][i] = inputs[key][i].cuda()
-                else:
-                    inputs[key] = inputs[key].cuda()
-
-            f_out = model(inputs)
-            logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-            labels = inputs['labels'].reshape(-1)
-            acc = compute_acc(logits, labels, cfg)
-            pred = logits.max(dim=1)[1]
-            print(short_name, 'Acc: ', acc)
-
-            visualize(inputs['xyz'][0], pred, short_name)
-
-
-def visualize(xyz, pred, short_name):
-    color = [[245 / 255, 150 / 255, 100 / 255],
-             [90 / 255, 30 / 255, 150 / 255], [80 / 255, 240 / 255, 150 / 255]]
-    xyz = xyz.squeeze().cpu().detach().numpy()
-    pred = pred.cpu().detach().numpy()
-
-    pred_label_set = list(set(pred))
-    pred_label_set.sort()
-    print(pred_label_set)
-    viz_point = open3d.geometry.PointCloud()
-    point_cloud = open3d.geometry.PointCloud()
-    for id_i, label_i in enumerate(pred_label_set):
-        # print('sem_label:', label_i, )
-        index = np.argwhere(pred == label_i).reshape(-1)
-        sem_cluster = xyz[index, :]
-        point_cloud.points = open3d.utility.Vector3dVector(sem_cluster)
-        point_cloud.paint_uniform_color(color[id_i])
-        viz_point += point_cloud
-
-    open3d.visualization.draw_geometries([viz_point],
-                                         window_name=short_name[0],
-                                         width=1920,
-                                         height=1080,
-                                         left=50,
-                                         top=50)
+        batch_data = next(iter(test_loader))
+        inputs, selected_indices = batch_data
+        inputs = make_cuda(inputs)
+        preds = model(inputs)
+        logits = preds
+        logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
+        logits = logits.max(dim=1)[1].cpu().numpy()
+        colors = [label_to_colors[0] for _ in range(pcs_xyz.size)]
+        for selected_idx in selected_indices:
+            for idx, sel_idx in enumerate(selected_idx):
+                if logits[idx] != 0:
+                    colors[sel_idx] = label_to_colors[logits[idx]]
+        pcl_xyzrgb = XYZ_to_XYZRGB(pcs_xyz,
+                                   color=colors,
+                                   use_multiple_colors=True)
+        if args.output is not None:
+            outpath = args.output
+        else:
+            outpath = os.path.join('results', os.path.basename(args.input))
+            if not os.path.exists(os.path.dirname(outpath)):
+                os.makedirs(os.path.dirname(outpath))
+        pcl.save(pcl_xyzrgb, outpath)
+        print('result is saved to {}'.format(outpath))
 
 
 if __name__ == "__main__":

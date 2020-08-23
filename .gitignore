@@ -136,3 +136,4 @@ dmypy.json
 .egg_info
 *.pth
 asset
+results

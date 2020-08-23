@@ -14,7 +14,7 @@ import ros_helper
 from configs import ConfigQDH as cfg
 from datasets.qdh_inference import QdhInferenceDataset
 from models.RandLANet import Network
-from utils.data_utils import DataProcessing as DP
+from utils.data_utils import XYZ_to_XYZRGB
 from utils.timer import Timer
 from utils.data_utils import make_cuda
 
@@ -144,9 +144,9 @@ class InferenceHelper:
                 if logits[idx] != 0:
                     colors[sel_idx] = self.label_to_colors[logits[idx]]
         # colors = [self.label_to_colors[int(label)] for label in logits]
-        pcl_xyzrgb = ros_helper.XYZ_to_XYZRGB(pcl_xyz,
-                                              color=colors,
-                                              use_multiple_colors=True)
+        pcl_xyzrgb = XYZ_to_XYZRGB(pcl_xyz,
+                                   color=colors,
+                                   use_multiple_colors=True)
         out_msg = ros_helper.pcl_to_ros(pcl_xyzrgb,
                                         frmae_id=self.frame_id,
                                         timestamp=ros_msg.header.stamp)

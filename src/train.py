@@ -16,7 +16,7 @@ from configs import ConfigQDH as cfg
 from datasets.qdh import QdhDataset
 from utils.loss_utils import compute_acc, IoUCalculator
 from utils.network_utils import load_network
-from utils.data_utils import make_cuda
+from utils.data_utils import make_cuda, visualize
 from utils import loss_utils
 
 best_loss = np.Inf
@@ -131,10 +131,10 @@ def embed():
                 main_index)
             tb_writer.add_scalar(
                 'sum_loss', all_loss / main_index,
-                            int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
-                            main_index)
+                int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
+                main_index)
 
-            if epoch_idx >= cfg.max_epoch // 4 and \
+            if epoch_idx >= cfg.max_epoch // 10 and \
                     batch_idx % 8 == 0 and \
                     cfg.use_full_set_pc_in_training:
                 del short_name
@@ -249,12 +249,35 @@ def embed():
 
             print(eval_log)
 
+    def visualize_one_epoch(i_epoch):
+        model.eval()
+        with torch.no_grad():
+            test_loader = data.DataLoader(test_dataset,
+                                          batch_size=cfg.eval_batch_size,
+                                          num_workers=cfg.num_workers,
+                                          collate_fn=test_dataset.collate_fn,
+                                          pin_memory=True,
+                                          shuffle=False,
+                                          drop_last=False)
+        if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
+            test_loader = tqdm(test_loader, ncols=100)
+        for i, (short_name, inputs) in enumerate(test_loader):
+            if i > 10:
+                break
+            inputs = make_cuda(inputs)
+            f_out = model(inputs)
+            logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+            pred = logits.max(dim=1)[1]
+            visualize(inputs['xyz'][0], pred,
+                      '{:03d}_{:02d}.pcd'.format(i_epoch, i))
+
     # with torchsnooper.snoop():
     epochs = trange(cfg.max_epoch, leave=True, desc="Epoch")
     for i_epoch in range(start_epoch, cfg.max_epoch):
         train_one_epoch(i_epoch)
         if i_epoch % 5 == 0:
             eval_one_epoch(i_epoch)
+            # visualize_one_epoch(i_epoch)
         scheduler.step()
         epochs.update()
         print('-' * 30)
