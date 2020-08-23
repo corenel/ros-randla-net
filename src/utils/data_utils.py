@@ -250,40 +250,40 @@ def make_cuda(batch_data):
     return batch_data
 
 
-def visualize(xyz, pred, short_name):
-    color = [[245 / 255, 150 / 255, 100 / 255],
-             [90 / 255, 30 / 255, 150 / 255], [80 / 255, 240 / 255, 150 / 255]]
-    xyz = xyz.squeeze().cpu().detach().numpy()
-    pred = pred.cpu().detach().numpy()
-
-    pred_label_set = list(set(pred))
-    pred_label_set.sort()
-    print(pred_label_set)
-    viz_point = open3d.geometry.PointCloud()
-    point_cloud = open3d.geometry.PointCloud()
-    for id_i, label_i in enumerate(pred_label_set):
-        index = np.argwhere(pred == label_i).reshape(-1)
-        sem_cluster = xyz[index, :]
-        point_cloud.points = open3d.utility.Vector3dVector(sem_cluster)
-        point_cloud.paint_uniform_color(color[id_i])
-        viz_point += point_cloud
-
-    # open3d.visualization.draw_geometries([viz_point],
-    #                                      window_name=short_name[0],
-    #                                      width=1920,
-    #                                      height=1080,
-    #                                      left=50,
-    #                                      top=50)
-
-    vis = open3d.visualization.Visualizer()
-    vis.create_window()
-    vis.add_geometry(viz_point)
-    vis.update_geometry(viz_point)
-    vis.poll_events()
-    vis.update_renderer()
-    vis.capture_screen_image(
-        os.path.join('results', os.path.basename(short_name)))
-    vis.destroy_window()
+# def visualize(xyz, pred, short_name):
+#     color = [[245 / 255, 150 / 255, 100 / 255],
+#              [90 / 255, 30 / 255, 150 / 255], [80 / 255, 240 / 255, 150 / 255]]
+#     xyz = xyz.squeeze().cpu().detach().numpy()
+#     pred = pred.cpu().detach().numpy()
+#
+#     pred_label_set = list(set(pred))
+#     pred_label_set.sort()
+#     print(pred_label_set)
+#     viz_point = open3d.geometry.PointCloud()
+#     point_cloud = open3d.geometry.PointCloud()
+#     for id_i, label_i in enumerate(pred_label_set):
+#         index = np.argwhere(pred == label_i).reshape(-1)
+#         sem_cluster = xyz[index, :]
+#         point_cloud.points = open3d.utility.Vector3dVector(sem_cluster)
+#         point_cloud.paint_uniform_color(color[id_i])
+#         viz_point += point_cloud
+#
+#     # open3d.visualization.draw_geometries([viz_point],
+#     #                                      window_name=short_name[0],
+#     #                                      width=1920,
+#     #                                      height=1080,
+#     #                                      left=50,
+#     #                                      top=50)
+#
+#     vis = open3d.visualization.Visualizer()
+#     vis.create_window()
+#     vis.add_geometry(viz_point)
+#     vis.update_geometry(viz_point)
+#     vis.poll_events()
+#     vis.update_renderer()
+#     vis.capture_screen_image(
+#         os.path.join('results', os.path.basename(short_name)))
+#     vis.destroy_window()
 
 
 def random_color_gen():
@@ -404,3 +404,17 @@ def float_to_rgb(float_rgb):
     color = [r, g, b]
 
     return color
+
+
+label_to_names = {0: 'unlabeled', 1: 'tripod', 2: 'element'}
+label_to_colors = {0: (255, 255, 255), 1: (255, 0, 0), 2: (0, 255, 0)}
+
+
+def visualize(preds, pcs_xyz, selected_indices, outpath):
+    colors = [label_to_colors[0] for _ in range(pcs_xyz.size)]
+    for selected_idx in selected_indices:
+        for idx, sel_idx in enumerate(selected_idx):
+            if int(preds[idx]) != 0:
+                colors[sel_idx] = label_to_colors[int(preds[idx])]
+    pcl_xyzrgb = XYZ_to_XYZRGB(pcs_xyz, color=colors, use_multiple_colors=True)
+    pcl.save(pcl_xyzrgb, outpath.replace('.pcd', '.ply'))

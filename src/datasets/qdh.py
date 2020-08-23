@@ -67,7 +67,8 @@ class QdhDataset(BaseDataset):
 
         # FIXME should aug after norm?
         # do data augmentation
-        selected_pc = self.data_aug(selected_pc)
+        if self.mode != 'test':
+            selected_pc = self.data_aug(selected_pc)
         # do normalization
         selected_pc, center, dist = self.normalize(selected_pc)
 

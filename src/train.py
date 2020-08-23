@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 from collections import defaultdict
+import pcl
 
 import numpy as np
 import torch
@@ -257,7 +258,7 @@ def embed():
                                           num_workers=cfg.num_workers,
                                           collate_fn=test_dataset.collate_fn,
                                           pin_memory=True,
-                                          shuffle=False,
+                                          shuffle=True,
                                           drop_last=False)
         if logging.getLogger().getEffectiveLevel() > logging.DEBUG:
             test_loader = tqdm(test_loader, ncols=100)
@@ -267,9 +268,14 @@ def embed():
             inputs = make_cuda(inputs)
             f_out = model(inputs)
             logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-            pred = logits.max(dim=1)[1]
-            visualize(inputs['xyz'][0], pred,
-                      '{:03d}_{:02d}.pcd'.format(i_epoch, i))
+            preds = logits.max(dim=1)[1]
+            outpath = os.path.join(args.logdir, 'results',
+                                   'epoch{:03d}_{:02d}.pcd'.format(i_epoch, i))
+            if not os.path.exists(os.path.dirname(outpath)):
+                os.makedirs(os.path.dirname(outpath))
+            pcs_xyz = pcl.PointCloud(inputs['xyz'][0][0].cpu().numpy())
+            visualize(preds.cpu().numpy(), pcs_xyz,
+                      inputs['input_inds'].cpu().numpy(), outpath)
 
     # with torchsnooper.snoop():
     epochs = trange(cfg.max_epoch, leave=True, desc="Epoch")
@@ -277,7 +283,7 @@ def embed():
         train_one_epoch(i_epoch)
         if i_epoch % 5 == 0:
             eval_one_epoch(i_epoch)
-            # visualize_one_epoch(i_epoch)
+            visualize_one_epoch(i_epoch)
         scheduler.step()
         epochs.update()
         print('-' * 30)

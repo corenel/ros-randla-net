@@ -8,11 +8,8 @@ import torch.utils.data as data
 
 from configs import ConfigQDH as cfg
 from datasets.qdh_inference import QdhInferenceDataset
-from utils.data_utils import make_cuda, XYZ_to_XYZRGB, XYZRGB_to_XYZ
+from utils.data_utils import make_cuda, visualize, XYZRGB_to_XYZ
 from utils.network_utils import load_network
-
-label_to_names = {0: 'unlabeled', 1: 'tripod', 2: 'element'}
-label_to_colors = {0: (255, 255, 255), 1: (255, 0, 0), 2: (0, 255, 0)}
 
 
 def embed():
@@ -58,22 +55,14 @@ def embed():
         preds = model(inputs)
         logits = preds
         logits = logits.transpose(1, 2).reshape(-1, cfg.num_classes)
-        logits = logits.max(dim=1)[1].cpu().numpy()
-        colors = [label_to_colors[0] for _ in range(pcs_xyz.size)]
-        for selected_idx in selected_indices:
-            for idx, sel_idx in enumerate(selected_idx):
-                if logits[idx] != 0:
-                    colors[sel_idx] = label_to_colors[logits[idx]]
-        pcl_xyzrgb = XYZ_to_XYZRGB(pcs_xyz,
-                                   color=colors,
-                                   use_multiple_colors=True)
+        preds = logits.max(dim=1)[1].cpu().numpy()
         if args.output is not None:
             outpath = args.output
         else:
             outpath = os.path.join('results', os.path.basename(args.input))
             if not os.path.exists(os.path.dirname(outpath)):
                 os.makedirs(os.path.dirname(outpath))
-        pcl.save(pcl_xyzrgb, outpath)
+        visualize(preds, pcs_xyz, selected_indices, outpath)
         print('result is saved to {}'.format(outpath))
 
 
