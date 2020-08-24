@@ -112,8 +112,12 @@ def embed():
             # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
             # labels = inputs['labels'].reshape(-1)
             # loss = criterion(logits, labels).mean()
-            loss, logits, labels = loss_utils.compute_loss_simple(
-                logits=f_out, labels=inputs['labels'], cfg=cfg)
+            if cfg.ignore_bg_labels_in_training:
+                loss, logits, labels = loss_utils.compute_loss(
+                    logits=f_out, labels=inputs['labels'], cfg=cfg)
+            else:
+                loss, logits, labels = loss_utils.compute_loss_simple(
+                    logits=f_out, labels=inputs['labels'], cfg=cfg)
             iou_calc.add_data(logits, labels)
             acc = compute_acc(logits, labels, cfg)
             main_index += batch_size
@@ -132,8 +136,8 @@ def embed():
                 main_index)
             tb_writer.add_scalar(
                 'sum_loss', all_loss / main_index,
-                int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
-                main_index)
+                            int(epoch_idx) * len(train_loader) * int(cfg.batch_size) +
+                            main_index)
 
             if epoch_idx >= cfg.max_epoch // 10 and \
                     batch_idx % 8 == 0 and \
@@ -150,8 +154,12 @@ def embed():
                     short_name, inputs = test_batch
                     inputs = make_cuda(inputs)
                     f_out = model(inputs)
-                    test_loss, logits, labels = loss_utils.compute_loss_simple(
-                        logits=f_out, labels=inputs['labels'], cfg=cfg)
+                    if cfg.ignore_bg_labels_in_training:
+                        test_loss, logits, labels = loss_utils.compute_loss(
+                            logits=f_out, labels=inputs['labels'], cfg=cfg)
+                    else:
+                        test_loss, logits, labels = loss_utils.compute_loss_simple(
+                            logits=f_out, labels=inputs['labels'], cfg=cfg)
                     # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
                     # labels = inputs['labels'].reshape(-1)
                     # test_loss = criterion(logits, labels).mean()
@@ -220,16 +228,20 @@ def embed():
                 batch_size = len(short_name)
                 inputs = make_cuda(inputs)
                 f_out = model(inputs)
-                logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
-                labels = inputs['labels'].reshape(-1)
-                # _, valid_logits, valid_labels = loss_utils.compute_loss_simple(
-                #     logits=f_out, labels=inputs['labels'], cfg=cfg)
+                if cfg.ignore_bg_labels_in_training:
+                    _, logits, labels = loss_utils.compute_loss(
+                        logits=f_out, labels=inputs['labels'], cfg=cfg)
+                else:
+                    _, logits, labels = loss_utils.compute_loss_simple(
+                        logits=f_out, labels=inputs['labels'], cfg=cfg)
+                # logits = f_out.transpose(1, 2).reshape(-1, cfg.num_classes)
+                # labels = inputs['labels'].reshape(-1)
                 eval_iou_calc.add_data(logits, labels)
                 acc = compute_acc(logits, labels, cfg)
                 # loss = loss1 + loss2
                 main_index += batch_size
                 epochs.set_description("Epoch (Acc=%g)" %
-                                       (round(acc.item(), 5)))
+                                       (round(float(acc), 5)))
 
             eval_log = '> Epoch [{:04d}/{:04d}] | Eval |'.format(
                 epoch_idx, cfg.max_epoch)

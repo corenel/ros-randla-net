@@ -27,6 +27,14 @@ class QdhDataset(BaseDataset):
         # self.data_list = self.data_list[0]
         # self.data_list = DP.shuffle_list(self.data_list)
 
+        self.label_values = np.sort(
+            [k for k, v in config.label_to_names.items()])
+        self.label_to_idx = {l: i for i, l in enumerate(self.label_values)}
+        self.ignored_labels = np.sort([0])
+        config.ignored_label_inds = [
+            self.label_to_idx[ign_label] for ign_label in self.ignored_labels
+        ]
+
     def __len__(self):
         return len(self.data_list)
 

@@ -32,6 +32,7 @@ class ConfigQDH:
     noise_init = 3.5  # noise initial parameter
     max_epoch = 200  # maximum epoch during training
     use_full_set_pc_in_training = False
+    ignore_bg_labels_in_training = False
     optimizer = 'lookahead'
     learning_rate = 1e-2  # initial learning rate
     # lr_decays = {i: 0.95 for i in range(0, 500)}  # decay rate of learning rate

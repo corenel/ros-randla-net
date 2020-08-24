@@ -100,6 +100,8 @@ ROS node for RandLA-Net to achieve point cloud segmentation.
 
 ## Performance
 
+- `num_points=4096`
+
 ### Speed
 
 | Hardware           | Throughout |
@@ -122,8 +124,45 @@ On GPU (RTX 2070 8GB):
 | post-process            | 79.7921   |
 | **Total**               | 204.2314  |
 
+## Training
+
+1. Modify `configs/qdh.py`
+
+   - `root`: root path to train set
+   - `test_root`: root path to test se
+   - `num_points`: number of points fed into network
+   - `num_classes`: number of classes
+   - `label_to_names`: mapping from class indices into class names
+   - `batch_size`: batch size for training
+   - `eval_batch_size`: batch size for evaluation
+   - `inference_batch_size`: batch size for inference in ROS node
+   - `crop_pc_on_inference`: whether or not crop the number point clouds to `num_points` in inference process
+   - `max_epoch`: maximum number of training epochs
+   - `use_full_set_pc_in_training`: whether or not to use full set point cloud (instead of `num_points`) in training process
+   - `ignore_bg_labels_in_training`: whether or not to ignore background label (`0`) for loss calculation in training
+   - `optimizer`: type of optimizer (`adam` or `lookahead`)
+   - `use_data_augmentation`: whether or not to use data augmentation (random rotation/translation) in training process
+   - `no_norm`: whether or not to use point cloud normalization in training process
+
+2. Get to training environment and run:
+
+   ```bash
+   $ python3 train.py
+   ```
+
+3. Test model for single PCD file:
+
+   ```bash
+   $ python3 test.py --input {path/to/pcd/file} --checkpoint {path/to/checkpoint/file}
+   ```
+
+
 ## TODO
 
 - [ ] Accelerate `tf_map` step in pre-process procedure
-- [ ] Add code for training models
-- [ ] Support `element` class
+- [x] Add code for training models
+- [x] Support `element` class
+
+## Known issues
+
+- In the realworld scene, there is a confounding phenomenon between the two categories of `tripod` and `element`, especially when the object is close to the lidar.
